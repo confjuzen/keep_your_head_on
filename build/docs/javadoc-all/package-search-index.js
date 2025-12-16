@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"io.github.abomination"},{"l":"io.github.abomination.body"},{"l":"io.github.abomination.lwjgl3"}];updateSearchResults();
