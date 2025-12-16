@@ -1,0 +1,130 @@
+package io.github.abomination;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.utils.Array;
+import java.util.Random;
+
+public class MusicManager {
+    private static MusicManager instance;
+    private Array<String> musicFiles;
+    private Music currentMusic;
+    private boolean isPlaying = false;
+    private boolean isShuffle = true;
+    private int currentTrackIndex = -1;
+    private Random random = new Random();
+
+    private MusicManager() {
+        musicFiles = new Array<>();
+        // Add all music tracks
+        for (int i = 1; i <= 16; i++) {
+            musicFiles.add("music/track" + i + ".mp3");
+        }
+    }
+
+    public static MusicManager getInstance() {
+        if (instance == null) {
+            instance = new MusicManager();
+        }
+        return instance;
+    }
+
+    public void play() {
+        if (musicFiles.size == 0) return;
+        
+        if (currentMusic != null) {
+            currentMusic.stop();
+            currentMusic.dispose();
+        }
+
+        if (isShuffle) {
+            currentTrackIndex = random.nextInt(musicFiles.size);
+        } else {
+            currentTrackIndex = (currentTrackIndex + 1) % musicFiles.size;
+        }
+
+        currentMusic = Gdx.audio.newMusic(Gdx.files.internal(musicFiles.get(currentTrackIndex)));
+        currentMusic.setOnCompletionListener(music -> playNext());
+        currentMusic.play();
+        isPlaying = true;
+    }
+
+    private void playNext() {
+        if (!isPlaying) return;
+        
+        if (currentMusic != null) {
+            currentMusic.stop();
+            currentMusic.dispose();
+        }
+
+        if (isShuffle) {
+            // Ensure we don't play the same track twice in a row when shuffling
+            int nextIndex;
+            do {
+                nextIndex = random.nextInt(musicFiles.size);
+            } while (nextIndex == currentTrackIndex && musicFiles.size > 1);
+            currentTrackIndex = nextIndex;
+        } else {
+            currentTrackIndex = (currentTrackIndex + 1) % musicFiles.size;
+        }
+
+        currentMusic = Gdx.audio.newMusic(Gdx.files.internal(musicFiles.get(currentTrackIndex)));
+        currentMusic.setOnCompletionListener(music -> playNext());
+        currentMusic.play();
+    }
+
+    public void stop() {
+        if (currentMusic != null) {
+            currentMusic.stop();
+            isPlaying = false;
+        }
+    }
+
+    public void pause() {
+        if (currentMusic != null) {
+            currentMusic.pause();
+            isPlaying = false;
+        }
+    }
+
+    public void resume() {
+        if (currentMusic != null && isPlaying) {
+            currentMusic.play();
+        } else if (currentMusic == null && isPlaying) {
+            play();
+        }
+    }
+
+    public void togglePlayPause() {
+        if (isPlaying) {
+            pause();
+        } else {
+            resume();
+        }
+    }
+
+    public void setVolume(float volume) {
+        if (currentMusic != null) {
+            currentMusic.setVolume(volume);
+        }
+    }
+
+    public boolean isPlaying() {
+        return isPlaying;
+    }
+
+    public void setShuffle(boolean shuffle) {
+        this.isShuffle = shuffle;
+    }
+
+    public boolean isShuffle() {
+        return isShuffle;
+    }
+
+    public void dispose() {
+        if (currentMusic != null) {
+            currentMusic.dispose();
+            currentMusic = null;
+        }
+    }
+}

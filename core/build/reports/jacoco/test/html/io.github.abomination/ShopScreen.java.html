@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShopScreen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">core</a> &gt; <a href="index.source.html" class="el_package">io.github.abomination</a> &gt; <span class="el_source">ShopScreen.java</span></div><h1>ShopScreen.java</h1><pre class="source lang-java linenums">package io.github.abomination;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+ 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.utils.Json;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.Scaling;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
+
+import io.github.abomination.body.BodyPart;
+import io.github.abomination.body.BodyPartType;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ShopScreen implements Screen {
+
+    private final Main game;
+    private final Stage stage;
+    private final BitmapFont font;
+<span class="nc" id="L34">    private final Skin skin = new Skin();</span>
+    private Label coinsLabel;
+    private Label messageLabel;
+<span class="nc" id="L37">    private float messageTimer = 0;</span>
+    private static final float MESSAGE_DISPLAY_TIME = 2f;
+
+<span class="nc" id="L40">    private final Map&lt;String, Texture&gt; textures = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L41">    private final Map&lt;String, String&gt; iconMap = new HashMap&lt;&gt;(); // Maps item names to texture keys</span>
+    // Inventory is managed by GameState
+<span class="nc" id="L43">    private final java.util.List&lt;ShopItem&gt; items = new ArrayList&lt;&gt;();</span>
+    private Table itemGrid;
+<span class="nc" id="L45">    private String currentCategory = &quot;All&quot;;</span>
+
+    // Item categories
+<span class="nc" id="L48">    private final Map&lt;String, java.util.List&lt;ShopItem&gt;&gt; categories = new HashMap&lt;&gt;();</span>
+    private Texture background;
+    private GameState gameState;
+<span class="nc" id="L51">    private int refreshCost = 1;</span>
+<span class="nc" id="L52">    private int refreshCount = 0;</span>
+    private TextButton refreshButton;
+<span class="nc" id="L54">    private final Map&lt;String, Boolean&gt; owned = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L55">    private boolean isInitialized = false;</span>
+<span class="nc" id="L56">    private boolean needsReset = false;</span>
+    
+    // Call this method when you want to force a refresh of the shop (e.g., after completing a level)
+    public void resetShop() {
+<span class="nc" id="L60">        needsReset = true;</span>
+<span class="nc" id="L61">    }</span>
+    private final Screen previousScreen;
+
+<span class="nc" id="L64">    public ShopScreen(Main game, Screen previousScreen) {</span>
+<span class="nc" id="L65">        this.game = game;</span>
+<span class="nc" id="L66">        this.previousScreen = previousScreen;</span>
+<span class="nc" id="L67">        this.gameState = game.getGameState();</span>
+<span class="nc" id="L68">        this.stage = new Stage(new ScreenViewport());</span>
+<span class="nc" id="L69">        Gdx.input.setInputProcessor(stage);</span>
+
+        // Load background
+<span class="nc" id="L72">        background = new Texture(Gdx.files.internal(&quot;shop.png&quot;));</span>
+
+        // Load fonts via FontFactory
+<span class="nc" id="L75">        font = FontFactory.loadKnewave(24, Color.WHITE, 1.5f, Color.BLACK);</span>
+
+        // Create label style
+<span class="nc" id="L78">        Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);</span>
+<span class="nc" id="L79">        skin.add(&quot;default&quot;, labelStyle);</span>
+
+        // Create button style
+<span class="nc" id="L82">        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();</span>
+<span class="nc" id="L83">        buttonStyle.font = font;</span>
+<span class="nc" id="L84">        buttonStyle.fontColor = Color.WHITE;</span>
+<span class="nc" id="L85">        buttonStyle.downFontColor = Color.LIGHT_GRAY;</span>
+<span class="nc" id="L86">        buttonStyle.overFontColor = Color.YELLOW;</span>
+<span class="nc" id="L87">        skin.add(&quot;default&quot;, buttonStyle);</span>
+
+        // Create title style
+<span class="nc" id="L90">        BitmapFont titleFont = FontFactory.loadKnewave(48, Color.WHITE, 1.5f, Color.BLACK);</span>
+<span class="nc" id="L91">        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, Color.WHITE);</span>
+<span class="nc" id="L92">        skin.add(&quot;title&quot;, titleStyle);</span>
+
+        // Create large button style
+<span class="nc" id="L95">        BitmapFont largeButtonFont = FontFactory.loadKnewave(32, Color.WHITE, 1.5f, Color.BLACK);</span>
+<span class="nc" id="L96">        TextButton.TextButtonStyle largeButtonStyle = new TextButton.TextButtonStyle(buttonStyle);</span>
+<span class="nc" id="L97">        largeButtonStyle.font = largeButtonFont;</span>
+<span class="nc" id="L98">        skin.add(&quot;large&quot;, largeButtonStyle);</span>
+        
+<span class="nc" id="L100">    }</span>
+
+    private void loadTextures() {
+        // Clear existing textures to prevent memory leaks
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (Texture texture : textures.values()) {</span>
+<span class="nc" id="L105">            texture.dispose();</span>
+<span class="nc" id="L106">        }</span>
+<span class="nc" id="L107">        textures.clear();</span>
+
+        // Load textures with error handling
+<span class="nc" id="L110">        loadTexture(&quot;daemon_arm.png&quot;);</span>
+<span class="nc" id="L111">        loadTexture(&quot;daemon_body.png&quot;);</span>
+<span class="nc" id="L112">        loadTexture(&quot;goat_head.png&quot;);</span>
+<span class="nc" id="L113">        loadTexture(&quot;goat_leg.png&quot;);</span>
+<span class="nc" id="L114">        loadTexture(&quot;samurai_head.png&quot;);</span>
+<span class="nc" id="L115">        loadTexture(&quot;unicorn_body.png&quot;);</span>
+<span class="nc" id="L116">        loadTexture(&quot;unicorn_head.png&quot;);</span>
+
+        // Set up icon mappings
+<span class="nc" id="L119">        iconMap.clear();</span>
+<span class="nc" id="L120">        iconMap.put(&quot;Demon Body&quot;, &quot;daemon_body.png&quot;);</span>
+<span class="nc" id="L121">        iconMap.put(&quot;Demon Arm&quot;, &quot;daemon_arm.png&quot;);</span>
+<span class="nc" id="L122">        iconMap.put(&quot;Goat Head&quot;, &quot;goat_head.png&quot;);</span>
+<span class="nc" id="L123">        iconMap.put(&quot;Goat Leg&quot;, &quot;goat_leg.png&quot;);</span>
+<span class="nc" id="L124">        iconMap.put(&quot;Samurai Head&quot;, &quot;samurai_head.png&quot;);</span>
+<span class="nc" id="L125">        iconMap.put(&quot;Unicorn Body&quot;, &quot;unicorn_body.png&quot;);</span>
+<span class="nc" id="L126">        iconMap.put(&quot;Unicorn Head&quot;, &quot;unicorn_head.png&quot;);</span>
+<span class="nc" id="L127">    }</span>
+
+    private void loadTexture(String path) {
+        try {
+<span class="nc" id="L131">            Texture texture = new Texture(Gdx.files.internal(&quot;body_parts/&quot; + path));</span>
+<span class="nc" id="L132">            texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);</span>
+<span class="nc" id="L133">            textures.put(path, texture);</span>
+<span class="nc" id="L134">        } catch (Exception e) {</span>
+<span class="nc" id="L135">            Gdx.app.error(&quot;ShopScreen&quot;, &quot;Failed to load texture: &quot; + path, e);</span>
+<span class="nc" id="L136">        }</span>
+<span class="nc" id="L137">    }</span>
+
+    private void loadItemsFromJson() {
+<span class="nc" id="L140">        items.clear();</span>
+<span class="nc" id="L141">        categories.clear();</span>
+
+        try {
+<span class="nc" id="L144">            FileHandle file = Gdx.files.internal(&quot;body_parts/body_parts.json&quot;);</span>
+<span class="nc" id="L145">            JsonReader jsonReader = new JsonReader();</span>
+<span class="nc" id="L146">            JsonValue root = jsonReader.parse(file);</span>
+
+            // Process each item in the JSON file
+<span class="nc bnc" id="L149" title="All 2 branches missed.">            for (JsonValue itemJson : root) {</span>
+                try {
+<span class="nc" id="L151">                    String name = itemJson.getString(&quot;name&quot;);</span>
+<span class="nc" id="L152">                    String type = itemJson.getString(&quot;type&quot;);</span>
+<span class="nc" id="L153">                    String partClass = itemJson.getString(&quot;class&quot;);</span>
+<span class="nc" id="L154">                    int health = itemJson.getInt(&quot;health&quot;);</span>
+<span class="nc" id="L155">                    int damage = itemJson.getInt(&quot;damage&quot;);</span>
+<span class="nc" id="L156">                    int speed = itemJson.getInt(&quot;speed&quot;);</span>
+<span class="nc" id="L157">                    String texturePath = itemJson.getString(&quot;texture&quot;);</span>
+
+                    // Get the cost from JSON, default to 2 if not present
+<span class="nc" id="L160">                    int price = itemJson.getInt(&quot;cost&quot;, 3);</span>
+
+                    // Determine category based on part class
+<span class="nc" id="L163">                    String category = partClass;</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                    if (partClass.equals(&quot;DAEMON&quot;))</span>
+<span class="nc" id="L165">                        category = &quot;Demon&quot;;</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">                    else if (partClass.equals(&quot;MYTHICAL&quot;))</span>
+<span class="nc" id="L167">                        category = &quot;Mythical&quot;;</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">                    else if (partClass.equals(&quot;ZOMBIE&quot;))</span>
+<span class="nc" id="L169">                        category = &quot;Zombie&quot;;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                    else if (partClass.equals(&quot;HUMAN&quot;))</span>
+<span class="nc" id="L171">                        category = &quot;Human&quot;;</span>
+
+                    // Create and add the shop item
+<span class="nc" id="L174">                    ShopItem item = new ShopItem(name, price, category, type, partClass,</span>
+                            health, damage, speed, texturePath);
+<span class="nc" id="L176">                    addItem(item);</span>
+
+                    // Add to icon map for texture loading
+<span class="nc" id="L179">                    String textureName = texturePath.substring(texturePath.lastIndexOf('/') + 1);</span>
+<span class="nc" id="L180">                    iconMap.put(name, textureName);</span>
+
+                    // Load the texture if not already loaded
+<span class="nc bnc" id="L183" title="All 2 branches missed.">                    if (!textures.containsKey(textureName)) {</span>
+<span class="nc" id="L184">                        loadTexture(textureName);</span>
+                    }
+<span class="nc" id="L186">                } catch (Exception e) {</span>
+<span class="nc" id="L187">                    Gdx.app.error(&quot;ShopScreen&quot;, &quot;Error processing item: &quot; + itemJson, e);</span>
+<span class="nc" id="L188">                }</span>
+<span class="nc" id="L189">            }</span>
+
+            // If no items were loaded, use default items
+<span class="nc bnc" id="L192" title="All 2 branches missed.">            if (items.isEmpty()) {</span>
+<span class="nc" id="L193">                Gdx.app.log(&quot;ShopScreen&quot;, &quot;No items loaded from JSON, using default items&quot;);</span>
+<span class="nc" id="L194">                loadDefaultItems();</span>
+            } else {
+<span class="nc" id="L196">                Gdx.app.log(&quot;ShopScreen&quot;, &quot;Loaded &quot; + items.size() + &quot; items from JSON&quot;);</span>
+
+                // Initialize owned status
+<span class="nc bnc" id="L199" title="All 2 branches missed.">                for (ShopItem item : items) {</span>
+                    // Initialize item data
+<span class="nc" id="L201">                }</span>
+            }
+
+<span class="nc" id="L204">        } catch (Exception e) {</span>
+<span class="nc" id="L205">            Gdx.app.error(&quot;ShopScreen&quot;, &quot;Error loading items from JSON&quot;, e);</span>
+<span class="nc" id="L206">            loadDefaultItems();</span>
+<span class="nc" id="L207">        }</span>
+<span class="nc" id="L208">    }</span>
+
+    private void loadDefaultItems() {
+        // Clear any existing items
+<span class="nc" id="L212">        items.clear();</span>
+<span class="nc" id="L213">        categories.clear();</span>
+
+        // Add default items
+<span class="nc" id="L216">        addItem(new ShopItem(&quot;Demon Body&quot;, 50, &quot;Demon&quot;, &quot;BODY&quot;, &quot;DAEMON&quot;, 20, 15, 10, &quot;daemon_body.png&quot;));</span>
+<span class="nc" id="L217">        addItem(new ShopItem(&quot;Demon Arm&quot;, 40, &quot;Demon&quot;, &quot;ARM&quot;, &quot;DAEMON&quot;, 15, 10, 15, &quot;daemon_arm.png&quot;));</span>
+<span class="nc" id="L218">        addItem(new ShopItem(&quot;Goat Head&quot;, 30, &quot;Goat&quot;, &quot;HEAD&quot;, &quot;DAEMON&quot;, 20, 10, 10, &quot;goat_head.png&quot;));</span>
+<span class="nc" id="L219">        addItem(new ShopItem(&quot;Goat Leg&quot;, 25, &quot;Goat&quot;, &quot;LEG&quot;, &quot;DAEMON&quot;, 15, 5, 20, &quot;goat_leg.png&quot;));</span>
+<span class="nc" id="L220">        addItem(new ShopItem(&quot;Samurai Head&quot;, 45, &quot;Samurai&quot;, &quot;HEAD&quot;, &quot;HUMAN&quot;, 25, 15, 15, &quot;samurai_head.png&quot;));</span>
+<span class="nc" id="L221">        addItem(new ShopItem(&quot;Unicorn Body&quot;, 60, &quot;Unicorn&quot;, &quot;BODY&quot;, &quot;MYTHICAL&quot;, 30, 20, 10, &quot;unicorn_body.png&quot;));</span>
+<span class="nc" id="L222">        addItem(new ShopItem(&quot;Unicorn Head&quot;, 55, &quot;Unicorn&quot;, &quot;HEAD&quot;, &quot;MYTHICAL&quot;, 25, 15, 15, &quot;unicorn_head.png&quot;));</span>
+
+        // Initialize owned status for default items
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (ShopItem item : items) {</span>
+<span class="nc" id="L226">            owned.putIfAbsent(item.name, false);</span>
+<span class="nc" id="L227">        }</span>
+
+        // Load textures for default items
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        for (String textureName : iconMap.values()) {</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (!textures.containsKey(textureName)) {</span>
+<span class="nc" id="L232">                loadTexture(textureName);</span>
+            }
+<span class="nc" id="L234">        }</span>
+<span class="nc" id="L235">    }</span>
+
+    private void loadRandomItems() {
+<span class="nc" id="L238">        items.clear();</span>
+
+        // Get all available items
+<span class="nc" id="L241">        java.util.List&lt;ShopItem&gt; allItems = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        for (java.util.List&lt;ShopItem&gt; categoryItems : categories.values()) {</span>
+<span class="nc" id="L243">            allItems.addAll(categoryItems);</span>
+<span class="nc" id="L244">        }</span>
+
+        // If we have less than 6 items, just use all of them
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (allItems.size() &lt;= 6) {</span>
+<span class="nc" id="L248">            items.addAll(allItems);</span>
+<span class="nc" id="L249">            return;</span>
+        }
+
+        // Select 6 random unique items
+<span class="nc" id="L253">        java.util.Collections.shuffle(allItems);</span>
+<span class="nc bnc" id="L254" title="All 4 branches missed.">        for (int i = 0; i &lt; 6 &amp;&amp; i &lt; allItems.size(); i++) {</span>
+<span class="nc" id="L255">            items.add(allItems.get(i));</span>
+        }
+<span class="nc" id="L257">    }</span>
+
+    private void updateCoinsDisplay() {
+<span class="nc" id="L260">        coinsLabel.setText(&quot;Coins: &quot; + gameState.getMoney());</span>
+<span class="nc" id="L261">    }</span>
+
+    private void refreshShop() {
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (gameState.getMoney() &gt;= refreshCost) {</span>
+<span class="nc" id="L265">            gameState.spendMoney(refreshCost);</span>
+<span class="nc" id="L266">            refreshCount++;</span>
+<span class="nc" id="L267">            refreshCost = 1 + refreshCount; // Increase cost by 1 each time</span>
+<span class="nc" id="L268">            updateCoinsDisplay();</span>
+<span class="nc" id="L269">            loadRandomItems();</span>
+<span class="nc" id="L270">            updateItemGrid();</span>
+<span class="nc" id="L271">            refreshButton.setText(&quot;Refresh: &quot; + refreshCost + &quot; coins&quot;);</span>
+        } else {
+<span class="nc" id="L273">            showMessage(&quot;Not enough coins!&quot;);</span>
+        }
+<span class="nc" id="L275">    }</span>
+
+    private void addItem(ShopItem item) {
+<span class="nc" id="L278">        items.add(item);</span>
+<span class="nc" id="L279">        categories.computeIfAbsent(item.category, k -&gt; new ArrayList&lt;&gt;()).add(item);</span>
+<span class="nc" id="L280">    }</span>
+
+    private void createUI() {
+<span class="nc" id="L283">        stage.clear();</span>
+
+<span class="nc" id="L285">        Table root = new Table();</span>
+<span class="nc" id="L286">        root.setFillParent(true);</span>
+<span class="nc" id="L287">        root.pad(0);</span>
+<span class="nc" id="L288">        stage.addActor(root);</span>
+
+        // Coins display
+<span class="nc" id="L291">        coinsLabel = new Label(&quot;Coins: &quot; + gameState.getMoney(), skin);</span>
+<span class="nc" id="L292">        root.add(coinsLabel).left().padBottom(0).row();</span>
+
+        // Message label for feedback
+<span class="nc" id="L295">        messageLabel = new Label(&quot;&quot;, skin);</span>
+<span class="nc" id="L296">        messageLabel.setColor(Color.YELLOW);</span>
+<span class="nc" id="L297">        root.add(messageLabel).colspan(2).center().padTop(0).row();</span>
+
+        // Items grid
+<span class="nc" id="L300">        itemGrid = new Table();</span>
+<span class="nc" id="L301">        itemGrid.defaults().pad(10);</span>
+
+        // Create refresh button with large font
+<span class="nc" id="L304">        refreshButton = new TextButton(&quot;Refresh: &quot; + refreshCost + &quot; coins&quot;, skin, &quot;large&quot;);</span>
+<span class="nc" id="L305">        refreshButton.getLabel().setAlignment(Align.center);</span>
+<span class="nc" id="L306">        refreshButton.getLabelCell().center();</span>
+<span class="nc" id="L307">        refreshButton.addListener(new ClickListener() {</span>
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+<span class="nc" id="L310">                refreshShop();</span>
+<span class="nc" id="L311">            }</span>
+        });
+
+<span class="nc" id="L314">        updateItemGrid();</span>
+
+        // Center the grid on screen
+<span class="nc" id="L317">        Table outerTable = new Table();</span>
+<span class="nc" id="L318">        outerTable.add(itemGrid).center();</span>
+
+<span class="nc" id="L320">        ScrollPane scrollPane = new ScrollPane(outerTable);</span>
+<span class="nc" id="L321">        scrollPane.setFillParent(true);</span>
+<span class="nc" id="L322">        scrollPane.setFadeScrollBars(false);</span>
+<span class="nc" id="L323">        scrollPane.setScrollingDisabled(true, true); // Disable scrolling since we have fixed size</span>
+
+<span class="nc" id="L325">        root.add(scrollPane).colspan(2).expand().fill().row();</span>
+
+        // Bottom buttons
+<span class="nc" id="L328">        Table buttonTable = new Table();</span>
+<span class="nc" id="L329">        buttonTable.defaults().pad(10).minWidth(200);</span>
+
+<span class="nc" id="L331">        TextButton backButton = new TextButton(&quot;Back to Game&quot;, skin.get(TextButton.TextButtonStyle.class));</span>
+<span class="nc" id="L332">        backButton.addListener(new ClickListener() {</span>
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+<span class="nc bnc" id="L335" title="All 2 branches missed.">                if (previousScreen != null) {</span>
+<span class="nc" id="L336">                    game.setScreen(previousScreen);</span>
+                } else {
+                    // Fallback in case previous screen is not set
+<span class="nc" id="L339">                    game.setScreen(new GameScreen(game));</span>
+                }
+<span class="nc" id="L341">            }</span>
+        });
+
+<span class="nc" id="L344">        buttonTable.add(backButton);</span>
+<span class="nc" id="L345">        root.add(buttonTable).colspan(2).fillX().padTop(-100);</span>
+<span class="nc" id="L346">    }</span>
+
+    private void updateItemGrid() {
+<span class="nc" id="L349">        itemGrid.clearChildren();</span>
+<span class="nc" id="L350">        itemGrid.defaults().pad(10).minWidth(200).uniform();</span>
+
+<span class="nc" id="L352">        int itemsPerRow = 3;</span>
+<span class="nc" id="L353">        int itemIndex = 0;</span>
+<span class="nc" id="L354">        int totalItems = items.size();</span>
+<span class="nc" id="L355">        boolean refreshButtonAdded = false;</span>
+        
+        // Add items in a 3x3 grid with refresh button in the center
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        for (int row = 0; row &lt; 3; row++) {</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">            for (int col = 0; col &lt; itemsPerRow; col++) {</span>
+                // Check if this is the center cell (row 1, column 1 in 0-based index)
+<span class="nc bnc" id="L361" title="All 4 branches missed.">                if (row == 1 &amp;&amp; col == 1) {</span>
+                    // Add refresh button in the center
+<span class="nc" id="L363">                    Table centerCell = new Table();</span>
+<span class="nc" id="L364">                    centerCell.add(refreshButton).size(350, 80);</span>
+<span class="nc" id="L365">                    itemGrid.add(centerCell);</span>
+<span class="nc" id="L366">                    refreshButtonAdded = true;</span>
+<span class="nc" id="L367">                } else {</span>
+                    // Add item card if we have more items
+<span class="nc bnc" id="L369" title="All 2 branches missed.">                    if (itemIndex &lt; totalItems) {</span>
+<span class="nc" id="L370">                        itemGrid.add(createItemCard(items.get(itemIndex)));</span>
+<span class="nc" id="L371">                        itemIndex++;</span>
+                    } else {
+                        // Add empty cell if no more items
+<span class="nc" id="L374">                        itemGrid.add();</span>
+                    }
+                }
+            }
+            
+            // Move to next row if not the last row
+<span class="nc bnc" id="L380" title="All 2 branches missed.">            if (row &lt; 2) {</span>
+<span class="nc" id="L381">                itemGrid.row();</span>
+            }
+        }
+<span class="nc" id="L384">    }</span>
+
+    private Table createItemCard(ShopItem item) {
+<span class="nc" id="L387">        Table card = new Table();</span>
+<span class="nc" id="L388">        card.defaults().pad(5);</span>
+
+        // Item image
+<span class="nc" id="L391">        String key = iconMap.get(item.name);</span>
+<span class="nc" id="L392">        Texture tex = textures.get(key);</span>
+<span class="nc" id="L393">        Image img = new Image(tex);</span>
+<span class="nc" id="L394">        img.setScaling(Scaling.fit);</span>
+
+        // Item name
+<span class="nc" id="L397">        Label nameLabel = new Label(item.name, skin);</span>
+<span class="nc" id="L398">        nameLabel.setColor(Color.WHITE);</span>
+
+        // Price label - show &quot;Out of stock&quot; if purchased
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        Label priceLabel = new Label(item.isPurchased ? &quot;Out of stock&quot; : (item.price + &quot; coins&quot;), skin);</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        priceLabel.setColor(item.isPurchased ? Color.RED : Color.GOLD);</span>
+
+        // Create action button
+<span class="nc bnc" id="L405" title="All 2 branches missed.">        TextButton actionButton = new TextButton(item.isPurchased ? &quot;Out of stock&quot; : &quot;Buy&quot;, skin);</span>
+<span class="nc" id="L406">        actionButton.setDisabled(item.isPurchased);</span>
+        
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        if (!item.isPurchased) {</span>
+<span class="nc" id="L409">            actionButton.addListener(new ClickListener() {</span>
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+<span class="nc bnc" id="L412" title="All 2 branches missed.">                    if (gameState.getMoney() &gt;= item.price) {</span>
+                        // Create a new BodyPart from the ShopItem
+                        PlayerClass playerClass;
+                        try {
+<span class="nc" id="L416">                            String cls = item.partClass;</span>
+<span class="nc bnc" id="L417" title="All 4 branches missed.">                            if (cls != null &amp;&amp; !cls.isEmpty()) {</span>
+<span class="nc" id="L418">                                cls = cls.substring(0, 1).toUpperCase() + cls.substring(1).toLowerCase();</span>
+                            } else {
+<span class="nc" id="L420">                                cls = &quot;Human&quot;;</span>
+                            }
+<span class="nc" id="L422">                            playerClass = PlayerClass.valueOf(cls);</span>
+<span class="nc" id="L423">                        } catch (Exception e) {</span>
+<span class="nc" id="L424">                            playerClass = PlayerClass.Human;</span>
+<span class="nc" id="L425">                        }</span>
+                        
+                        // Create the body part
+<span class="nc" id="L428">                        BodyPart bodyPart = new BodyPart(</span>
+<span class="nc" id="L429">                            item.name.toLowerCase().replace(&quot; &quot;, &quot;_&quot;), // Simple ID generation</span>
+                            item.name,
+<span class="nc" id="L431">                            BodyPartType.valueOf(item.type),</span>
+                            playerClass,
+                            item.health,
+                            item.damage,
+                            item.speed,
+                            item.texturePath
+                        );
+                        
+                        // Add to inventory
+<span class="nc" id="L440">                        gameState.addToInventory(bodyPart);</span>
+                        
+                        // Deduct coins and mark as purchased
+<span class="nc" id="L443">                        gameState.spendMoney(item.price);</span>
+<span class="nc" id="L444">                        item.isPurchased = true;</span>
+                        
+                        // Update UI
+<span class="nc" id="L447">                        updateItemGrid();</span>
+<span class="nc" id="L448">                        updateCoinsLabel();</span>
+<span class="nc" id="L449">                        showMessage(&quot;Purchased &quot; + item.name + &quot;!&quot;);</span>
+<span class="nc" id="L450">                    } else {</span>
+<span class="nc" id="L451">                        showMessage(&quot;Not enough coins!&quot;);</span>
+                    }
+<span class="nc" id="L453">                }</span>
+            });
+        }
+
+        // Layout with reduced spacing
+<span class="nc" id="L458">        card.add(img).size(100).padBottom(5).row();</span>
+<span class="nc" id="L459">        card.add(nameLabel).padBottom(2).row();</span>
+<span class="nc" id="L460">        card.add(priceLabel).padBottom(2).row();</span>
+<span class="nc" id="L461">        card.add(actionButton).width(120).height(40).padTop(2);</span>
+
+<span class="nc" id="L463">        return card;</span>
+    }
+
+    private void updateCoinsLabel() {
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (coinsLabel != null) {</span>
+<span class="nc" id="L468">            coinsLabel.setText(&quot;Coins: &quot; + gameState.getMoney());</span>
+        } else {
+<span class="nc" id="L470">            coinsLabel = new Label(&quot;Coins: &quot; + gameState.getMoney(), skin);</span>
+        }
+<span class="nc" id="L472">    }</span>
+
+    private void showMessage(String message) {
+<span class="nc" id="L475">        messageLabel.setText(message);</span>
+<span class="nc" id="L476">        messageTimer = MESSAGE_DISPLAY_TIME;</span>
+<span class="nc" id="L477">    }</span>
+
+    @Override
+    public void show() {
+<span class="nc" id="L481">        Gdx.input.setInputProcessor(stage);</span>
+        
+        // Check if we need to reset the shop (after completing a level)
+<span class="nc bnc" id="L484" title="All 2 branches missed.">        if (needsReset) {</span>
+<span class="nc" id="L485">            needsReset = false;</span>
+<span class="nc" id="L486">            isInitialized = false;</span>
+            
+            // Clear existing UI elements
+<span class="nc bnc" id="L489" title="All 2 branches missed.">            if (stage != null) {</span>
+<span class="nc" id="L490">                stage.clear();</span>
+            }
+            
+            // Clear existing items
+<span class="nc" id="L494">            items.clear();</span>
+<span class="nc" id="L495">            categories.clear();</span>
+            
+            // Reset refresh cost
+<span class="nc" id="L498">            refreshCost = 1;</span>
+<span class="nc" id="L499">            refreshCount = 0;</span>
+        }
+        
+        // Only initialize the shop if not already done
+<span class="nc bnc" id="L503" title="All 2 branches missed.">        if (!isInitialized) {</span>
+            // Load textures
+<span class="nc" id="L505">            loadTextures();</span>
+            
+            // Load items from JSON
+<span class="nc" id="L508">            loadItemsFromJson();</span>
+            
+            // Initialize items
+<span class="nc" id="L511">            loadRandomItems();</span>
+            
+            // Create UI
+<span class="nc" id="L514">            createUI();</span>
+            
+<span class="nc" id="L516">            isInitialized = true;</span>
+        } else {
+            // Just update the coins display and refresh button text
+<span class="nc" id="L519">            updateCoinsDisplay();</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">            if (refreshButton != null) {</span>
+<span class="nc" id="L521">                refreshButton.setText(&quot;Refresh: &quot; + refreshCost + &quot; coins&quot;);</span>
+            }
+<span class="nc" id="L523">            updateItemGrid();</span>
+        }
+<span class="nc" id="L525">    }</span>
+
+    @Override
+    public void render(float delta) {
+        // Update message timer
+<span class="nc bnc" id="L530" title="All 2 branches missed.">        if (messageTimer &gt; 0) {</span>
+<span class="nc" id="L531">            messageTimer -= delta;</span>
+<span class="nc bnc" id="L532" title="All 2 branches missed.">            if (messageTimer &lt;= 0) {</span>
+<span class="nc" id="L533">                messageLabel.setText(&quot;&quot;);</span>
+            }
+        }
+
+        // Clear screen
+<span class="nc" id="L538">        Gdx.gl.glClearColor(0, 0, 0, 1);</span>
+<span class="nc" id="L539">        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);</span>
+
+        // Draw background
+<span class="nc" id="L542">        stage.getBatch().begin();</span>
+<span class="nc" id="L543">        stage.getBatch().draw(background, 0, 0, stage.getWidth(), stage.getHeight());</span>
+<span class="nc" id="L544">        stage.getBatch().end();</span>
+
+        // Draw stage
+<span class="nc" id="L547">        stage.act(delta);</span>
+<span class="nc" id="L548">        stage.draw();</span>
+<span class="nc" id="L549">    }</span>
+
+    @Override
+    public void resize(int width, int height) {
+<span class="nc" id="L553">        stage.getViewport().update(width, height, true);</span>
+<span class="nc" id="L554">        updateItemGrid(); // Update grid layout on resize</span>
+<span class="nc" id="L555">    }</span>
+
+    @Override
+    public void pause() {
+<span class="nc" id="L559">    }</span>
+
+    @Override
+    public void resume() {
+<span class="nc" id="L563">    }</span>
+
+    @Override
+    public void hide() {
+<span class="nc" id="L567">    }</span>
+
+    @Override
+    public void dispose() {
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        if (stage != null)</span>
+<span class="nc" id="L572">            stage.dispose();</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">        if (font != null)</span>
+<span class="nc" id="L574">            font.dispose();</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        if (skin != null)</span>
+<span class="nc" id="L576">            skin.dispose();</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">        if (background != null)</span>
+<span class="nc" id="L578">            background.dispose();</span>
+
+        // Dispose textures
+<span class="nc bnc" id="L581" title="All 2 branches missed.">        for (Texture texture : textures.values()) {</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">            if (texture != null)</span>
+<span class="nc" id="L583">                texture.dispose();</span>
+<span class="nc" id="L584">        }</span>
+<span class="nc" id="L585">        textures.clear();</span>
+<span class="nc" id="L586">    }</span>
+
+    public static class ShopItem {
+        public final String name;
+        public final int price;
+        public final String category;
+        public final String type;
+        public final String partClass;
+        public final int health;
+        public final int damage;
+        public final int speed;
+        public final String texturePath;
+        public boolean isPurchased;
+
+        public ShopItem(String name, int price, String category, String type, String partClass,
+<span class="nc" id="L601">                int health, int damage, int speed, String texturePath) {</span>
+<span class="nc" id="L602">            this.name = name;</span>
+<span class="nc" id="L603">            this.price = price;</span>
+<span class="nc" id="L604">            this.category = category;</span>
+<span class="nc" id="L605">            this.type = type;</span>
+<span class="nc" id="L606">            this.partClass = partClass;</span>
+<span class="nc" id="L607">            this.health = health;</span>
+<span class="nc" id="L608">            this.damage = damage;</span>
+<span class="nc" id="L609">            this.speed = speed;</span>
+<span class="nc" id="L610">            this.texturePath = texturePath;</span>
+<span class="nc" id="L611">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

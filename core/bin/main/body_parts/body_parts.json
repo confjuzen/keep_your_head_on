@@ -1,0 +1,392 @@
+{
+  "unicorn_zombie_head": {
+    "name": "Zombie Unicorn Head",
+    "class": "ZOMBIE",
+    "type": "HEAD",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/unicorn_zombie_head.png"
+  },
+  "human_body": {
+    "name": "Human Body",
+    "type": "BODY",
+    "class": "HUMAN",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/human_body.png"
+  },
+  "samurai_head": {
+    "name": "Samurai Head",
+    "type": "HEAD",
+    "class": "HUMAN",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/samurai_head.png"
+  },
+  "female_head": {
+    "name": "Princess Head",
+    "type": "HEAD",
+    "class": "HUMAN",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/female_head.png"
+  },
+  "beard_head": {
+    "name": "Beard Head",
+    "type": "HEAD",
+    "class": "HUMAN",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/beard_head.png"
+  },
+  "frog_head": {
+    "name": "Frog Head",
+    "type": "HEAD",
+    "class": "MYTHICAL",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/frog_head.png"
+  },
+  "unicorn_head": {
+    "name": "Unicorn Head",
+    "type": "HEAD",
+    "class": "MYTHICAL",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/unicorn_head.png"
+  },
+  "zombie_left_arm": {
+    "name": "Zombie Arm",
+    "type": "LEFT_ARM",
+    "class": "ZOMBIE",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/zombie_arm.png"
+  },
+  "zombie_right_arm": {
+    "name": "Zombie Arm",
+    "type": "RIGHT_ARM",
+    "class": "ZOMBIE",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/zombie_arm.png"
+  },
+  "human_left_arm": {
+    "name": "Human Arm",
+    "type": "LEFT_ARM",
+    "class": "HUMAN",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/mythical_arm.png"
+  },
+  "human_right_arm": {
+    "name": "Human Arm",
+    "type": "RIGHT_ARM",
+    "class": "Human",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/mythical_arm.png"
+  },
+  "mythical_left_arm": {
+    "name": "Mythical Arm",
+    "type": "LEFT_ARM",
+    "class": "MYTHICAL",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/mythical_arm.png"
+  },
+  "mythical_right_arm": {
+    "name": "Mythical Arm",
+    "type": "RIGHT_ARM",
+    "class": "MYTHICAL",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/mythical_arm.png"
+  },
+  "human_left_leg": {
+    "name": "Human Leg",
+    "type": "LEFT_LEG",
+    "class": "HUMAN",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/human_leg.png"
+  },
+  "human_right_leg": {
+    "name": "Human Leg",
+    "type": "RIGHT_LEG",
+    "class": "HUMAN",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/human_leg.png"
+  },
+  "mythical_left_leg": {
+    "name": "Mythical Leg",
+    "type": "LEFT_LEG",
+    "class": "MYTHICAL",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/mythical_leg.png"
+  },
+  "mythical_right_leg": {
+    "name": "Mythical Leg",
+    "type": "RIGHT_LEG",
+    "class": "MYTHICAL",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/mythical_leg.png"
+  },
+  "robot_right_arm": {
+    "name": "Robot Arm",
+    "type": "RIGHT_ARM",
+    "class": "ROBOT",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/robot_arm.png"
+  },
+  "robot_left_arm": {
+    "name": "Robot Arm",
+    "type": "LEFT_ARM",
+    "class": "ROBOT",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/robot_arm.png"
+  },
+  "unicorn_body": {
+    "name": "Unicorn Body",
+    "type": "BODY",
+    "class": "MYTHICAL",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/unicorn_body.png"
+  },
+  "daemon_head": {
+    "name": "Daemon Head",
+    "class": "DAEMON",
+    "type": "HEAD",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/daemon_head.png"
+  },
+  "daemon_body": {
+    "name": "Daemon Torso",
+    "class": "DAEMON",
+    "type": "BODY",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/daemon_body.png"
+  },
+        "robot_head": {
+                "name": "Robot Head",
+                "class": "ROBOT",
+                "type": "HEAD",
+                "health": 20,
+                "damage": 2,
+                "speed": 10,
+                "cost": 2,
+                "texture": "body_parts/robot_head.png"
+        },
+        "goat_head": {
+                "name": "Goat Head",
+                "type": "HEAD",
+                "class": "DAEMON",
+                "health": 20,
+                "damage": 2,
+                "speed": 50,
+                "cost": 2,
+                "texture": "body_parts/goat_head.png"
+        },
+  "cat_robot_head": {
+    "name": "Cat Robot Head",
+    "class": "ROBOT",
+    "type": "HEAD",
+    "health": 20,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/cat_robot_head.png"
+  },
+  "robot_body": {
+    "name": "Robot Torso",
+    "class": "ROBOT",
+    "type": "BODY",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/robot_body.png"
+  },
+  "zombie_body": {
+    "name": "Zombie Torso",
+    "class": "ZOMBIE",
+    "type": "BODY",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/zombie_body.png"
+  },
+  "daemon_right_arm": {
+    "name": "Daemon Right Arm",
+    "type": "RIGHT_ARM",
+    "class": "DAEMON",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/daemon_arm.png"
+  },
+  "daemon_left_arm": {
+    "name": "Daemon Left Arm",
+    "type": "LEFT_ARM",
+    "class": "DAEMON",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/daemon_arm.png"
+  },
+  "goat_right_leg": {
+    "name": "Goat Right Leg",
+    "type": "RIGHT_LEG",
+    "class": "DAEMON",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/goat_leg.png"
+  },
+  "goat_left_leg": {
+    "name": "Goat Left Leg",
+    "type": "LEFT_LEG",
+    "class": "DAEMON",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/goat_leg.png"
+  },
+  "zombie_left_leg_boot": {
+    "name": "Zombie Left Leg Boot",
+    "type": "LEFT_LEG",
+    "class": "ZOMBIE",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/zombie_boot_leg.png"
+  },
+  "zombie_right_leg_boot": {
+    "name": "Zombie Right Leg Boot",
+    "type": "RIGHT_LEG",
+    "class": "ZOMBIE",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/zombie_boot_leg.png"
+  },
+  "zombie_left_leg": {
+    "name": "Zombie Left Leg",
+    "type": "LEFT_LEG",
+    "class": "ZOMBIE",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/zombie_leg.png"
+  },
+  "zombie_right_leg": {
+    "name": "Zombie Right Leg",
+    "type": "RIGHT_LEG",
+    "class": "ZOMBIE",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/zombie_leg.png"
+  },
+  "robot_right_leg_2": {
+    "name": "Robot Right Leg 2",
+    "type": "RIGHT_LEG",
+    "class": "ROBOT",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/robot_leg_2.png"
+  },
+  "robot_left_leg_2": {
+    "name": "Robot Left Leg 2",
+    "type": "LEFT_LEG",
+    "class": "ROBOT",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/robot_leg_2.png"
+  },
+  "robot_right_leg": {
+    "name": "Robot Right Leg",
+    "type": "RIGHT_LEG",
+    "class": "ROBOT",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/robot_leg.png"
+  },
+  "robot_left_leg": {
+    "name": "Robot Left Leg",
+    "type": "LEFT_LEG",
+    "class": "ROBOT",
+    "health": 10,
+    "damage": 2,
+    "speed": 10,
+    "cost": 2,
+    "texture": "body_parts/robot_leg.png"
+  }
+}

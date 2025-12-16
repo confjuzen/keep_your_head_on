@@ -1,0 +1,21 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+sourceSets.main.resources.srcDirs = ["assets/"]
+
+dependencies {
+  api "com.badlogicgames.gdx:gdx:$gdxVersion"
+  implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+
+  if(enableGraalNative == 'true') {
+    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
+  }
+}
+
+// Ensure the assets are copied to the build directory
+task copyAssets(type: Copy) {
+    from 'assets/'
+    into 'build/resources/main/'
+}
+
+processResources.dependsOn copyAssets

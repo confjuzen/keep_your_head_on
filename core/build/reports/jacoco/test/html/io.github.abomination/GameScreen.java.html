@@ -1,0 +1,670 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GameScreen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">core</a> &gt; <a href="index.source.html" class="el_package">io.github.abomination</a> &gt; <span class="el_source">GameScreen.java</span></div><h1>GameScreen.java</h1><pre class="source lang-java linenums">package io.github.abomination;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
+import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop;
+import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Payload;
+import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Source;
+import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Target;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import java.util.HashMap;
+import java.util.Map;
+
+public class GameScreen implements Screen {
+
+    private final Main game;
+    private BitmapFont font;
+    private final PlayerClass selectedClass;
+    private final GameState gameState;
+    private final LaneManager laneManager;
+    private Lane hoveredLane;
+    private Lane highlightLane;
+<span class="nc" id="L35">    private float laneHighlightProgress = 0f;</span>
+    private final Texture backgroundTexture;
+    private final Viewport viewport;
+    private final OrthographicCamera camera;
+    private final ShapeRenderer shapeRenderer;
+    private final Stage stage;
+    private final UI spawnButtonUI;
+    private final UI spawnButtonUI2;
+    private final UI spawnButtonUI3;
+    // Skin is not currently used but kept for future UI styling
+    private EnemySpawner enemySpawner;
+
+    private final Texture castleLeftTexture;
+    private final Texture castleRightTexture;
+<span class="nc" id="L49">    private float playerCastleHealth = 100f;</span>
+<span class="nc" id="L50">    private float enemyCastleHealth = 100f;</span>
+<span class="nc" id="L51">    private float playerCastleMaxHealth = 100f;</span>
+<span class="nc" id="L52">    private float enemyCastleMaxHealth = 100f;</span>
+<span class="nc" id="L53">    private final Animation playerCastleAnim = new Animation();</span>
+<span class="nc" id="L54">    private final Animation enemyCastleAnim = new Animation();</span>
+<span class="nc" id="L55">    private boolean gameOver = false;</span>
+<span class="nc" id="L56">    private boolean levelWon = false;</span>
+<span class="nc" id="L57">    private int gameOverMenuIndex = 0;</span>
+<span class="nc" id="L58">    private int levelWonMenuIndex = 0;</span>
+    private final com.badlogic.gdx.graphics.Texture whitePixel;
+    private final com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle buttonStyle;
+<span class="nc" id="L61">    private final com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();</span>
+    private final Texture overlayBackground;
+    private static Sound hitCastleSound;
+<span class="nc" id="L64">    private float castleHitSoundCooldown = 0f;</span>
+    private static final float CASTLE_HIT_COOLDOWN = 0.25f;
+<span class="nc" id="L66">    private final Map&lt;Mob, Float&gt; castleAttackTimers = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L68">    public GameScreen(Main game) {</span>
+<span class="nc" id="L69">        this.game = game;</span>
+<span class="nc" id="L70">        this.gameState = game.getGameState();</span>
+<span class="nc" id="L71">        this.selectedClass = gameState.getPlayerClass();</span>
+<span class="nc" id="L72">        this.laneManager = new LaneManager();</span>
+<span class="nc" id="L73">        this.backgroundTexture = new Texture(</span>
+<span class="nc" id="L74">                Gdx.files.internal(&quot;battlefield.png&quot;));</span>
+<span class="nc" id="L75">        this.castleLeftTexture = new Texture(Gdx.files.internal(&quot;castle1.png&quot;));</span>
+<span class="nc" id="L76">        this.castleRightTexture = new Texture(Gdx.files.internal(&quot;castle2.png&quot;));</span>
+<span class="nc" id="L77">        this.overlayBackground = new Texture(Gdx.files.internal(&quot;blank_blk_bg.png&quot;));</span>
+
+        // Scale castle health by level (similar idea to enemy scaling)
+<span class="nc" id="L80">        int level = Math.max(1, gameState.getLevel());</span>
+<span class="nc" id="L81">        float baseHp = 150f;</span>
+<span class="nc" id="L82">        float perLevel = 25f;</span>
+<span class="nc" id="L83">        float levelBonus = (level - 1) * perLevel;</span>
+<span class="nc" id="L84">        playerCastleMaxHealth = baseHp + levelBonus;</span>
+<span class="nc" id="L85">        enemyCastleMaxHealth = baseHp + levelBonus;</span>
+<span class="nc" id="L86">        playerCastleHealth = playerCastleMaxHealth;</span>
+<span class="nc" id="L87">        enemyCastleHealth = enemyCastleMaxHealth;</span>
+
+<span class="nc" id="L89">        font = FontFactory.loadKnewave(36, Color.WHITE);</span>
+
+        // Initialize enemy spawner with all lanes
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        if (laneManager.getLanes() != null &amp;&amp; !laneManager.getLanes().isEmpty()) {</span>
+<span class="nc" id="L93">            enemySpawner = new EnemySpawner(laneManager.getLanes(), selectedClass, gameState);</span>
+        }
+
+<span class="nc" id="L96">        camera = new OrthographicCamera();</span>
+<span class="nc" id="L97">        shapeRenderer = new ShapeRenderer();</span>
+<span class="nc" id="L98">        viewport = new FitViewport(1200, 800, camera);</span>
+<span class="nc" id="L99">        camera.position.set(</span>
+<span class="nc" id="L100">                viewport.getWorldWidth() / 2f,</span>
+<span class="nc" id="L101">                viewport.getWorldHeight() / 2f,</span>
+                0f);
+<span class="nc" id="L103">        camera.update();</span>
+
+<span class="nc" id="L105">        stage = new Stage(viewport, game.batch);</span>
+<span class="nc" id="L106">        Gdx.input.setInputProcessor(stage);</span>
+
+<span class="nc" id="L108">        BitmapFont fontDefault = new BitmapFont();</span>
+
+<span class="nc" id="L110">        com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle textButtonStyle = new com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle();</span>
+<span class="nc" id="L111">        textButtonStyle.font = fontDefault;</span>
+<span class="nc" id="L112">        textButtonStyle.fontColor = Color.BLACK;</span>
+
+<span class="nc" id="L114">        com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(</span>
+                1,
+                1,
+                com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+<span class="nc" id="L118">        pixmap.setColor(Color.WHITE);</span>
+<span class="nc" id="L119">        pixmap.fill();</span>
+<span class="nc" id="L120">        this.whitePixel = new com.badlogic.gdx.graphics.Texture(pixmap);</span>
+<span class="nc" id="L121">        pixmap.dispose();</span>
+
+<span class="nc" id="L123">        textButtonStyle.up = new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(</span>
+                new com.badlogic.gdx.graphics.g2d.TextureRegion(this.whitePixel));
+<span class="nc" id="L125">        this.buttonStyle = textButtonStyle;</span>
+
+        // Create spawn buttons for each mob
+<span class="nc" id="L128">        spawnButtonUI = new UI(</span>
+                &quot;Mob 1&quot;,
+                buttonStyle,
+                0,
+                game);
+<span class="nc" id="L133">        spawnButtonUI.setPosition(50, viewport.getWorldHeight() - 100);</span>
+<span class="nc" id="L134">        spawnButtonUI.setSize(70, 70);</span>
+<span class="nc" id="L135">        stage.addActor(spawnButtonUI);</span>
+
+<span class="nc" id="L137">        spawnButtonUI2 = new UI(</span>
+                &quot;Mob 2&quot;,
+                buttonStyle,
+                1,
+                game);
+<span class="nc" id="L142">        spawnButtonUI2.setPosition(170, viewport.getWorldHeight() - 100);</span>
+<span class="nc" id="L143">        spawnButtonUI2.setSize(70, 70);</span>
+<span class="nc" id="L144">        stage.addActor(spawnButtonUI2);</span>
+
+<span class="nc" id="L146">        spawnButtonUI3 = new UI(</span>
+                &quot;Mob 3&quot;,
+                buttonStyle,
+                2,
+                game);
+<span class="nc" id="L151">        spawnButtonUI3.setPosition(290, viewport.getWorldHeight() - 100);</span>
+<span class="nc" id="L152">        spawnButtonUI3.setSize(70, 70);</span>
+<span class="nc" id="L153">        stage.addActor(spawnButtonUI3);</span>
+
+        // Set up lane drop targets
+<span class="nc" id="L156">        setupLaneDropTargets();</span>
+<span class="nc" id="L157">    }</span>
+
+    private void setupLaneDropTargets() {
+        // Get the DragAndDrop instance from the UI class
+<span class="nc" id="L161">        DragAndDrop dragAndDrop = UI.getDragAndDrop();</span>
+
+        // Create an invisible actor for each lane that will serve as the drop target
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        for (int i = 0; i &lt; laneManager.getLanes().size(); i++) {</span>
+<span class="nc" id="L165">            final Lane lane = laneManager.getLanes().get(i);</span>
+<span class="nc" id="L166">            final Actor laneDropTarget = new Actor();</span>
+
+            // Position and size the drop target to cover the lane
+<span class="nc" id="L169">            float laneY = lane.getLaneHight();</span>
+<span class="nc" id="L170">            laneDropTarget.setBounds(0, laneY, viewport.getWorldWidth(), 190);</span>
+
+            // Make the target invisible but interactive
+<span class="nc" id="L173">            laneDropTarget.setTouchable(Touchable.enabled);</span>
+
+            // Add the target to the stage
+<span class="nc" id="L176">            stage.addActor(laneDropTarget);</span>
+
+            // Set up the drop target using the shared DragAndDrop instance
+<span class="nc" id="L179">            dragAndDrop.addTarget(new Target(laneDropTarget) {</span>
+                @Override
+                public boolean drag(Source source, Payload payload, float x, float y, int pointer) {
+                    // Highlight the lane when dragging over it
+<span class="nc" id="L183">                    GameScreen.this.hoveredLane = lane;</span>
+<span class="nc" id="L184">                    return true;</span>
+                }
+
+                @Override
+                public void drop(Source source, Payload payload, float x, float y, int pointer) {
+                    // When dropped, spawn the mob in this lane
+<span class="nc" id="L190">                    UI ui = (UI) payload.getObject();</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">                    if (ui != null) {</span>
+<span class="nc" id="L192">                        ui.spawnMob(lane);</span>
+                    }
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                    if (GameScreen.this.hoveredLane == lane) {</span>
+<span class="nc" id="L195">                        GameScreen.this.hoveredLane = null;</span>
+                    }
+<span class="nc" id="L197">                }</span>
+
+                @Override
+                public void reset(Source source, Payload payload) {
+                    // Reset any highlighting
+<span class="nc bnc" id="L202" title="All 2 branches missed.">                    if (GameScreen.this.hoveredLane == lane) {</span>
+<span class="nc" id="L203">                        GameScreen.this.hoveredLane = null;</span>
+                    }
+<span class="nc" id="L205">                }</span>
+            });
+        }
+<span class="nc" id="L208">    }</span>
+
+    @Override
+    public void render(float delta) {
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (castleHitSoundCooldown &gt; 0f) {</span>
+<span class="nc" id="L213">            castleHitSoundCooldown -= delta;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">            if (castleHitSoundCooldown &lt; 0f) {</span>
+<span class="nc" id="L215">                castleHitSoundCooldown = 0f;</span>
+            }
+        }
+<span class="nc bnc" id="L218" title="All 6 branches missed.">        if (enemySpawner != null &amp;&amp; !gameOver &amp;&amp; !levelWon) {</span>
+<span class="nc" id="L219">            enemySpawner.update(delta);</span>
+        }
+<span class="nc" id="L221">        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);</span>
+<span class="nc" id="L222">        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);</span>
+
+<span class="nc bnc" id="L224" title="All 6 branches missed.">        if (!gameOver &amp;&amp; !levelWon &amp;&amp; Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {</span>
+<span class="nc" id="L225">            pause();</span>
+<span class="nc" id="L226">            game.setScreen(new OptionsScreen(game, this));</span>
+        }
+
+<span class="nc" id="L229">        game.batch.setProjectionMatrix(camera.combined);</span>
+<span class="nc" id="L230">        playerCastleAnim.update(delta);</span>
+<span class="nc" id="L231">        enemyCastleAnim.update(delta);</span>
+<span class="nc" id="L232">        game.batch.begin();</span>
+
+<span class="nc" id="L234">        float ww = viewport.getWorldWidth();</span>
+<span class="nc" id="L235">        float wh = viewport.getWorldHeight();</span>
+<span class="nc" id="L236">        game.batch.draw(backgroundTexture, 0, 0, ww, wh);</span>
+
+<span class="nc" id="L238">        float cSize = 200f;</span>
+
+<span class="nc" id="L240">        float usableTop = 80f;</span>
+<span class="nc" id="L241">        float usableBottom = 80f;</span>
+<span class="nc" id="L242">        float usableHeight = wh - (usableTop + usableBottom);</span>
+<span class="nc" id="L243">        float leftW = Math.min(cSize,</span>
+<span class="nc" id="L244">                (float) castleLeftTexture.getWidth() / (float) castleLeftTexture.getHeight() * usableHeight);</span>
+<span class="nc" id="L245">        float leftH = (float) castleLeftTexture.getHeight() / 1.6f;</span>
+<span class="nc" id="L246">        float leftY = usableBottom + (usableHeight - leftH) / 2f;</span>
+<span class="nc" id="L247">        float sL = playerCastleAnim.getPulseScale();</span>
+<span class="nc" id="L248">        float drawLeftW = leftW * sL;</span>
+<span class="nc" id="L249">        float drawLeftH = leftH * sL;</span>
+<span class="nc" id="L250">        float drawLeftX = -50f - (drawLeftW - leftW) / 2f;</span>
+<span class="nc" id="L251">        float drawLeftY = leftY - (drawLeftH - leftH) / 2f;</span>
+<span class="nc" id="L252">        game.batch.draw(castleLeftTexture, drawLeftX, drawLeftY, drawLeftW, drawLeftH);</span>
+
+<span class="nc" id="L254">        float rightW = Math.min(cSize,</span>
+<span class="nc" id="L255">                (float) castleRightTexture.getWidth() / (float) castleRightTexture.getHeight() * usableHeight);</span>
+<span class="nc" id="L256">        float rightH = (float) castleRightTexture.getHeight() / 1.6f;</span>
+<span class="nc" id="L257">        float rightY = usableBottom + (usableHeight - rightH) / 2f;</span>
+<span class="nc" id="L258">        float sR = enemyCastleAnim.getPulseScale();</span>
+<span class="nc" id="L259">        float drawRightW = rightW * sR;</span>
+<span class="nc" id="L260">        float drawRightH = rightH * sR;</span>
+<span class="nc" id="L261">        float drawRightX = (ww - rightW + 60f) - (drawRightW - rightW) / 2f;</span>
+<span class="nc" id="L262">        float drawRightY = rightY - (drawRightH - rightH) / 2f;</span>
+<span class="nc" id="L263">        game.batch.draw(castleRightTexture, drawRightX, drawRightY, drawRightW, drawRightH);</span>
+
+<span class="nc" id="L265">        float barTotalWidth = ww * 0.47f;</span>
+<span class="nc" id="L266">        float barH = 24f;</span>
+<span class="nc" id="L267">        float padSide = 25f;</span>
+<span class="nc" id="L268">        float padBottom = 10f;</span>
+<span class="nc" id="L269">        float pHp = Math.max(0f, Math.min(playerCastleMaxHealth, playerCastleHealth));</span>
+<span class="nc" id="L270">        float eHp = Math.max(0f, Math.min(enemyCastleMaxHealth, enemyCastleHealth));</span>
+
+<span class="nc bnc" id="L272" title="All 2 branches missed.">        float playerRatio = playerCastleMaxHealth &gt; 0f ? pHp / playerCastleMaxHealth : 0f;</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        float enemyRatio = enemyCastleMaxHealth &gt; 0f ? eHp / enemyCastleMaxHealth : 0f;</span>
+
+<span class="nc" id="L275">        game.batch.end();</span>
+
+<span class="nc" id="L277">        Gdx.gl.glEnable(GL20.GL_BLEND);</span>
+<span class="nc" id="L278">        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);</span>
+<span class="nc" id="L279">        shapeRenderer.setProjectionMatrix(camera.combined);</span>
+<span class="nc" id="L280">        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);</span>
+
+<span class="nc" id="L282">        drawRoundedHealthBar(padSide, padBottom, barTotalWidth, barH, playerRatio, true);</span>
+<span class="nc" id="L283">        drawRoundedHealthBar(ww - padSide - barTotalWidth, padBottom, barTotalWidth, barH, enemyRatio, false);</span>
+
+<span class="nc" id="L285">        shapeRenderer.end();</span>
+<span class="nc" id="L286">        Gdx.gl.glDisable(GL20.GL_BLEND);</span>
+
+<span class="nc" id="L288">        game.batch.begin();</span>
+<span class="nc" id="L289">        game.batch.setProjectionMatrix(camera.combined);</span>
+
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (hoveredLane != null) {</span>
+<span class="nc" id="L292">            highlightLane = hoveredLane;</span>
+        }
+
+<span class="nc bnc" id="L295" title="All 2 branches missed.">        float targetHighlight = hoveredLane != null ? 1f : 0f;</span>
+<span class="nc" id="L296">        float fadeSpeed = 6f;</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">        if (laneHighlightProgress &lt; targetHighlight) {</span>
+<span class="nc" id="L298">            laneHighlightProgress = Math.min(targetHighlight, laneHighlightProgress + delta * fadeSpeed);</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        } else if (laneHighlightProgress &gt; targetHighlight) {</span>
+<span class="nc" id="L300">            laneHighlightProgress = Math.max(targetHighlight, laneHighlightProgress - delta * fadeSpeed);</span>
+        }
+
+<span class="nc bnc" id="L303" title="All 4 branches missed.">        if (highlightLane != null &amp;&amp; laneHighlightProgress &gt; 0f) {</span>
+<span class="nc" id="L304">            float t = laneHighlightProgress;</span>
+<span class="nc" id="L305">            float eased = t * t * (3f - 2f * t);</span>
+<span class="nc" id="L306">            float alphaBase = 0.2f * eased;</span>
+
+<span class="nc" id="L308">            float laneY = highlightLane.getLaneHight();</span>
+<span class="nc" id="L309">            float laneHeight = 190f;</span>
+<span class="nc" id="L310">            float radius = 24f;</span>
+<span class="nc" id="L311">            float centerHeight = laneHeight - radius * 2f;</span>
+<span class="nc" id="L312">            float width = viewport.getWorldWidth();</span>
+
+<span class="nc" id="L314">            game.batch.setColor(1f, 1f, 0f, alphaBase);</span>
+<span class="nc" id="L315">            game.batch.draw(whitePixel, 0f, laneY + radius, width, centerHeight);</span>
+
+<span class="nc" id="L317">            int steps = 12;</span>
+<span class="nc" id="L318">            float stepH = radius / (float) steps;</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">            for (int i = 0; i &lt; steps; i++) {</span>
+<span class="nc" id="L320">                float nt = (i + 1f) / (float) steps;</span>
+<span class="nc" id="L321">                float rowAlpha = alphaBase * (1f - nt);</span>
+<span class="nc" id="L322">                float yTop = laneY + radius - (i + 1f) * stepH;</span>
+<span class="nc" id="L323">                float yBottom = laneY + radius + centerHeight + i * stepH;</span>
+<span class="nc" id="L324">                game.batch.setColor(1f, 1f, 0f, rowAlpha);</span>
+
+<span class="nc" id="L326">                float inset = radius * nt;</span>
+<span class="nc" id="L327">                float rowWidth = width - inset * 2f;</span>
+<span class="nc" id="L328">                float rowX = inset;</span>
+
+<span class="nc" id="L330">                game.batch.draw(whitePixel, rowX, yTop, rowWidth, stepH);</span>
+<span class="nc" id="L331">                game.batch.draw(whitePixel, rowX, yBottom, rowWidth, stepH);</span>
+            }
+
+<span class="nc" id="L334">            game.batch.setColor(1f, 1f, 1f, 1f);</span>
+        }
+
+<span class="nc bnc" id="L337" title="All 4 branches missed.">        if (laneHighlightProgress &lt;= 0.001f &amp;&amp; hoveredLane == null) {</span>
+<span class="nc" id="L338">            highlightLane = null;</span>
+        }
+
+<span class="nc bnc" id="L341" title="All 4 branches missed.">        if (!gameOver &amp;&amp; !levelWon) {</span>
+<span class="nc" id="L342">            laneManager.updateLanes();</span>
+        }
+<span class="nc bnc" id="L344" title="All 2 branches missed.">        for (Lane lane : laneManager.getLanes()) {</span>
+<span class="nc" id="L345">            lane.render(game.batch);</span>
+<span class="nc" id="L346">        }</span>
+
+        // Draw level info
+<span class="nc" id="L349">        font.draw(game.batch, &quot;Level: &quot; + gameState.getLevel(), viewport.getWorldWidth() - 200f,</span>
+<span class="nc" id="L350">                viewport.getWorldHeight() - 30f);</span>
+<span class="nc" id="L351">        font.draw(game.batch, &quot;Coins: &quot; + gameState.getMoney(), viewport.getWorldWidth() - 400f,</span>
+<span class="nc" id="L352">                viewport.getWorldHeight() - 30f);</span>
+
+<span class="nc bnc" id="L354" title="All 4 branches missed.">        if (!gameOver &amp;&amp; !levelWon) {</span>
+<span class="nc" id="L355">            applyCastleDamage(delta);</span>
+        }
+
+<span class="nc" id="L358">        game.batch.end();</span>
+
+<span class="nc bnc" id="L360" title="All 4 branches missed.">        if (gameOver || levelWon) {</span>
+<span class="nc" id="L361">            game.batch.begin();</span>
+<span class="nc" id="L362">            game.batch.draw(overlayBackground, 0, 0, ww, wh);</span>
+
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            if (gameOver) {</span>
+<span class="nc" id="L365">                String title = &quot;GAME OVER&quot;;</span>
+<span class="nc" id="L366">                layout.setText(font, title);</span>
+<span class="nc" id="L367">                font.draw(game.batch, title, (ww - layout.width) / 2f, wh * 0.7f);</span>
+
+<span class="nc" id="L369">                String[] menuOptions = { &quot;Back to Title&quot;, &quot;Quit&quot; };</span>
+<span class="nc" id="L370">                float line = font.getLineHeight();</span>
+<span class="nc" id="L371">                float optionSpacing = line * 1.2f;</span>
+<span class="nc" id="L372">                float firstY = wh / 2f;</span>
+
+<span class="nc bnc" id="L374" title="All 2 branches missed.">                for (int i = 0; i &lt; menuOptions.length; i++) {</span>
+<span class="nc" id="L375">                    String base = menuOptions[i];</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">                    String label = (i == gameOverMenuIndex)</span>
+<span class="nc" id="L377">                            ? &quot;&gt; &quot; + base + &quot; &lt;&quot;</span>
+<span class="nc" id="L378">                            : &quot;  &quot; + base + &quot;  &quot;;</span>
+<span class="nc" id="L379">                    layout.setText(font, label);</span>
+<span class="nc" id="L380">                    float optX = (ww - layout.width) / 2f;</span>
+<span class="nc" id="L381">                    float optY = firstY - i * optionSpacing;</span>
+<span class="nc" id="L382">                    font.draw(game.batch, label, optX, optY);</span>
+                }
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            } else if (levelWon) {</span>
+<span class="nc" id="L385">                String title = &quot;Level &quot; + gameState.getLevel() + &quot; Won!&quot;;</span>
+<span class="nc" id="L386">                String reward = &quot;You gain &quot; + gameState.getLevel() + &quot; coins&quot;;</span>
+<span class="nc" id="L387">                layout.setText(font, title);</span>
+<span class="nc" id="L388">                font.draw(game.batch, title, (ww - layout.width) / 2f, wh * 0.7f);</span>
+<span class="nc" id="L389">                layout.setText(font, reward);</span>
+<span class="nc" id="L390">                font.draw(game.batch, reward, (ww - layout.width) / 2f, wh * 0.6f);</span>
+
+<span class="nc" id="L392">                String[] menuOptions = { &quot;Continue&quot; };</span>
+<span class="nc" id="L393">                float line = font.getLineHeight();</span>
+<span class="nc" id="L394">                float optionSpacing = line * 1.2f;</span>
+<span class="nc" id="L395">                float firstY = wh * 0.45f;</span>
+
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                for (int i = 0; i &lt; menuOptions.length; i++) {</span>
+<span class="nc" id="L398">                    String base = menuOptions[i];</span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">                    String label = (i == levelWonMenuIndex)</span>
+<span class="nc" id="L400">                            ? &quot;&gt; &quot; + base + &quot; &lt;&quot;</span>
+<span class="nc" id="L401">                            : &quot;  &quot; + base + &quot;  &quot;;</span>
+<span class="nc" id="L402">                    layout.setText(font, label);</span>
+<span class="nc" id="L403">                    float optX = (ww - layout.width) / 2f;</span>
+<span class="nc" id="L404">                    float optY = firstY - i * optionSpacing;</span>
+<span class="nc" id="L405">                    font.draw(game.batch, label, optX, optY);</span>
+                }
+            }
+
+<span class="nc" id="L409">            game.batch.end();</span>
+
+            // Handle input for overlays (no buttons on screen), LevelSelect-style
+<span class="nc bnc" id="L412" title="All 2 branches missed.">            if (gameOver) {</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">                if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {</span>
+<span class="nc" id="L414">                    gameOverMenuIndex = (gameOverMenuIndex + 2 - 1) % 2;</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">                } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {</span>
+<span class="nc" id="L416">                    gameOverMenuIndex = (gameOverMenuIndex + 1) % 2;</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">                } else if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) ||</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">                        Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">                    if (gameOverMenuIndex == 0) {</span>
+<span class="nc" id="L420">                        game.setScreen(new TitleScreen(game));</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">                    } else if (gameOverMenuIndex == 1) {</span>
+<span class="nc" id="L422">                        Gdx.app.exit();</span>
+                    }
+<span class="nc bnc" id="L424" title="All 2 branches missed.">                } else if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) ||</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">                        Gdx.input.isKeyJustPressed(Input.Keys.Q)) {</span>
+                    // ESC/Q still act as quick quit
+<span class="nc" id="L427">                    Gdx.app.exit();</span>
+                }
+<span class="nc bnc" id="L429" title="All 2 branches missed.">            } else if (levelWon) {</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">                if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) ||</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">                        Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {</span>
+<span class="nc" id="L432">                    int reward = Math.max(1, gameState.getLevel());</span>
+<span class="nc" id="L433">                    gameState.addCoins(reward);</span>
+<span class="nc" id="L434">                    game.setScreen(new LevelSelectScreen(game));</span>
+                }
+            }
+        }
+
+<span class="nc" id="L439">        stage.act(delta);</span>
+<span class="nc" id="L440">        stage.draw();</span>
+<span class="nc" id="L441">    }</span>
+
+    @Override
+    public void show() {
+<span class="nc" id="L445">    }</span>
+
+    @Override
+    public void resize(int width, int height) {
+<span class="nc" id="L449">        viewport.update(width, height, true);</span>
+<span class="nc" id="L450">        positionOverlayButtons();</span>
+<span class="nc" id="L451">    }</span>
+
+    @Override
+    public void pause() {
+<span class="nc" id="L455">    }</span>
+
+    @Override
+    public void resume() {
+<span class="nc" id="L459">    }</span>
+
+    @Override
+    public void hide() {
+<span class="nc" id="L463">    }</span>
+
+    @Override
+    public void dispose() {
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (font != null)</span>
+<span class="nc" id="L468">            font.dispose();</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        if (backgroundTexture != null)</span>
+<span class="nc" id="L470">            backgroundTexture.dispose();</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">        if (stage != null)</span>
+<span class="nc" id="L472">            stage.dispose();</span>
+
+<span class="nc bnc" id="L474" title="All 2 branches missed.">        if (castleLeftTexture != null)</span>
+<span class="nc" id="L475">            castleLeftTexture.dispose();</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">        if (castleRightTexture != null)</span>
+<span class="nc" id="L477">            castleRightTexture.dispose();</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        if (whitePixel != null)</span>
+<span class="nc" id="L479">            whitePixel.dispose();</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        if (overlayBackground != null)</span>
+<span class="nc" id="L481">            overlayBackground.dispose();</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">        if (shapeRenderer != null)</span>
+<span class="nc" id="L483">            shapeRenderer.dispose();</span>
+<span class="nc" id="L484">    }</span>
+
+    private void applyCastleDamage(float delta) {
+<span class="nc" id="L487">        float leftThreshold = 100f;</span>
+<span class="nc" id="L488">        float rightThreshold = viewport.getWorldWidth() - 150f;</span>
+<span class="nc" id="L489">        boolean playerCastleHit = false;</span>
+<span class="nc" id="L490">        boolean enemyCastleHit = false;</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">        for (Lane lane : laneManager.getLanes()) {</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">            for (Unit u : lane.getUnits()) {</span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">                if (u instanceof Mob) {</span>
+<span class="nc" id="L494">                    Mob m = (Mob) u;</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">                    if (m.isReadyToDispose()) {</span>
+<span class="nc" id="L496">                        castleAttackTimers.remove(m);</span>
+<span class="nc" id="L497">                        continue;</span>
+                    }
+<span class="nc" id="L499">                    int speed = m.getTotalSpeed();</span>
+<span class="nc bnc" id="L500" title="All 2 branches missed.">                    if (speed &lt;= 0)</span>
+<span class="nc" id="L501">                        speed = 1;</span>
+<span class="nc" id="L502">                    float attackInterval = 1.0f / (speed * 0.016f);</span>
+<span class="nc" id="L503">                    Float timerObj = castleAttackTimers.get(m);</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">                    float timer = timerObj != null ? timerObj : 0f;</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">                    if (m.isEnemy()) {</span>
+<span class="nc bnc" id="L506" title="All 4 branches missed.">                        if (!m.isInCombat() &amp;&amp; m.getLanePosition() &lt;= leftThreshold) {</span>
+<span class="nc" id="L507">                            timer += delta;</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">                            while (timer &gt;= attackInterval) {</span>
+<span class="nc" id="L509">                                timer -= attackInterval;</span>
+<span class="nc" id="L510">                                float damage = m.getTotalDamage();</span>
+<span class="nc" id="L511">                                playerCastleHealth -= damage;</span>
+<span class="nc" id="L512">                                playerCastleHit = true;</span>
+<span class="nc" id="L513">                                m.onHit(damage, 1.0f);</span>
+<span class="nc" id="L514">                            }</span>
+                        } else {
+<span class="nc" id="L516">                            timer = 0f;</span>
+                        }
+                    } else {
+<span class="nc bnc" id="L519" title="All 4 branches missed.">                        if (!m.isInCombat() &amp;&amp; m.getLanePosition() &gt;= rightThreshold) {</span>
+<span class="nc" id="L520">                            timer += delta;</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">                            while (timer &gt;= attackInterval) {</span>
+<span class="nc" id="L522">                                timer -= attackInterval;</span>
+<span class="nc" id="L523">                                float damage = m.getTotalDamage();</span>
+<span class="nc" id="L524">                                enemyCastleHealth -= damage;</span>
+<span class="nc" id="L525">                                enemyCastleHit = true;</span>
+<span class="nc" id="L526">                                m.onHit(damage, 1.0f);</span>
+<span class="nc" id="L527">                            }</span>
+                        } else {
+<span class="nc" id="L529">                            timer = 0f;</span>
+                        }
+                    }
+<span class="nc" id="L532">                    castleAttackTimers.put(m, timer);</span>
+                }
+<span class="nc" id="L534">            }</span>
+<span class="nc" id="L535">        }</span>
+        // Play hit sound and trigger castle damage animation for each side that was hit
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (playerCastleHit) {</span>
+<span class="nc" id="L538">            playCastleHitSound();</span>
+<span class="nc" id="L539">            playerCastleAnim.triggerPulse(0.15f, 0.15f);</span>
+        }
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        if (enemyCastleHit) {</span>
+<span class="nc" id="L542">            playCastleHitSound();</span>
+<span class="nc" id="L543">            enemyCastleAnim.triggerPulse(0.15f, 0.15f);</span>
+        }
+<span class="nc bnc" id="L545" title="All 4 branches missed.">        if (playerCastleHealth &lt;= 0 &amp;&amp; !gameOver) {</span>
+<span class="nc" id="L546">            playerCastleHealth = 0;</span>
+<span class="nc" id="L547">            gameOver = true;</span>
+<span class="nc" id="L548">            showGameOverOverlay();</span>
+        }
+<span class="nc bnc" id="L550" title="All 4 branches missed.">        if (enemyCastleHealth &lt;= 0 &amp;&amp; !levelWon) {</span>
+<span class="nc" id="L551">            enemyCastleHealth = 0;</span>
+<span class="nc" id="L552">            levelWon = true;</span>
+<span class="nc" id="L553">            showLevelWonOverlay();</span>
+        }
+<span class="nc" id="L555">    }</span>
+
+    private void playCastleHitSound() {
+<span class="nc bnc" id="L558" title="All 2 branches missed.">        if (hitCastleSound == null) {</span>
+            try {
+<span class="nc" id="L560">                hitCastleSound = Gdx.audio.newSound(Gdx.files.internal(&quot;music/hit_castle.mp3&quot;));</span>
+<span class="nc" id="L561">            } catch (Exception e) {</span>
+<span class="nc" id="L562">                System.out.println(&quot;Could not load hit_castle.mp3: &quot; + e.getMessage());</span>
+<span class="nc" id="L563">                return;</span>
+<span class="nc" id="L564">            }</span>
+        }
+<span class="nc" id="L566">        hitCastleSound.play(1.0f);</span>
+<span class="nc" id="L567">    }</span>
+
+    private void showGameOverOverlay() {
+        // Buttons removed: overlay handled entirely in render via keyboard input.
+<span class="nc" id="L571">    }</span>
+
+    private void showLevelWonOverlay() {
+        // Buttons removed: overlay handled entirely in render via keyboard input.
+<span class="nc" id="L575">    }</span>
+
+    private void positionOverlayButtons() {
+        // No buttons to position anymore; kept for compatibility.
+<span class="nc" id="L579">    }</span>
+
+    private void drawRoundedHealthBar(float x, float y, float width, float height, float fillRatio, boolean isPlayer) {
+<span class="nc" id="L582">        float radius = height / 2f;</span>
+<span class="nc" id="L583">        float centerWidth = Math.max(0f, width - 2f * radius);</span>
+
+        // Background (dark gray, more transparent so the pink stands out)
+<span class="nc" id="L586">        shapeRenderer.setColor(0.5f, 0.1f, 0.1f, 0.3f);</span>
+        // Center rect
+<span class="nc bnc" id="L588" title="All 2 branches missed.">        if (centerWidth &gt; 0f) {</span>
+<span class="nc" id="L589">            shapeRenderer.rect(x + radius, y, centerWidth, height);</span>
+        }
+        // Rounded ends
+<span class="nc" id="L592">        shapeRenderer.circle(x + radius, y + radius, radius);</span>
+<span class="nc" id="L593">        shapeRenderer.circle(x + width - radius, y + radius, radius);</span>
+
+        // Health fill (pink, clearly semi-transparent)
+<span class="nc bnc" id="L596" title="All 2 branches missed.">        if (fillRatio &gt; 0f) {</span>
+<span class="nc" id="L597">            float clampedRatio = Math.max(0f, Math.min(1f, fillRatio));</span>
+<span class="nc" id="L598">            float fillWidth = Math.min(width, width * clampedRatio);</span>
+
+<span class="nc bnc" id="L600" title="All 2 branches missed.">            if (fillWidth &lt;= 0f) {</span>
+<span class="nc" id="L601">                return;</span>
+            }
+
+            // Compute fill segment [fillLeft, fillRight] so that
+            // - player bar fills from left to right
+            // - enemy bar fills from right to left
+            float fillLeft;
+            float fillRight;
+<span class="nc bnc" id="L609" title="All 2 branches missed.">            if (isPlayer) {</span>
+<span class="nc" id="L610">                fillLeft = x;</span>
+<span class="nc" id="L611">                fillRight = x + fillWidth;</span>
+            } else {
+<span class="nc" id="L613">                fillRight = x + width;</span>
+<span class="nc" id="L614">                fillLeft = fillRight - fillWidth;</span>
+            }
+
+            // Main fill color
+<span class="nc" id="L618">            shapeRenderer.setColor(1.0f, 0.3f, 0.7f, 0.2f);</span>
+
+<span class="nc" id="L620">            float filledSpan = fillRight - fillLeft;</span>
+
+<span class="nc bnc" id="L622" title="All 2 branches missed.">            if (filledSpan &lt;= radius * 2f) {</span>
+                // Small fill: just a circle matching the current width
+<span class="nc" id="L624">                float smallRadius = filledSpan / 2f;</span>
+<span class="nc" id="L625">                float cx = fillLeft + smallRadius;</span>
+<span class="nc" id="L626">                shapeRenderer.circle(cx, y + radius, smallRadius);</span>
+<span class="nc" id="L627">            } else {</span>
+<span class="nc" id="L628">                float fillCenterWidth = filledSpan - 2f * radius;</span>
+<span class="nc bnc" id="L629" title="All 2 branches missed.">                if (fillCenterWidth &gt; 0f) {</span>
+<span class="nc" id="L630">                    shapeRenderer.rect(fillLeft + radius, y, fillCenterWidth, height);</span>
+                }
+<span class="nc" id="L632">                shapeRenderer.circle(fillLeft + radius, y + radius, radius);</span>
+<span class="nc" id="L633">                shapeRenderer.circle(fillRight - radius, y + radius, radius);</span>
+            }
+
+            // Fuzzy/blur edge at the leading side of the bar
+<span class="nc" id="L637">            float edgeWidth = Math.min(width * 0.08f, 40f);</span>
+<span class="nc bnc" id="L638" title="All 2 branches missed.">            if (edgeWidth &gt; 0f) {</span>
+<span class="nc" id="L639">                int steps = 6;</span>
+<span class="nc" id="L640">                float segment = edgeWidth / steps;</span>
+
+                // Leading edge: right side for player, left side for enemy
+<span class="nc" id="L643">                boolean edgeOnRight = isPlayer;</span>
+
+<span class="nc bnc" id="L645" title="All 2 branches missed.">                for (int i = 0; i &lt; steps; i++) {</span>
+<span class="nc" id="L646">                    float t = (i + 1f) / (float) steps;</span>
+<span class="nc" id="L647">                    float alpha = 0.2f * (1f - t);</span>
+<span class="nc" id="L648">                    shapeRenderer.setColor(1.0f, 0.3f, 0.7f, alpha);</span>
+
+                    float segX;
+<span class="nc bnc" id="L651" title="All 2 branches missed.">                    if (edgeOnRight) {</span>
+<span class="nc" id="L652">                        segX = fillRight - i * segment - segment;</span>
+                    } else {
+<span class="nc" id="L654">                        segX = fillLeft + i * segment;</span>
+                    }
+
+<span class="nc" id="L657">                    float segW = segment;</span>
+
+                    // Clip to the actual filled region just in case
+<span class="nc" id="L660">                    float clipLeft = Math.max(segX, fillLeft);</span>
+<span class="nc" id="L661">                    float clipRight = Math.min(segX + segW, fillRight);</span>
+<span class="nc bnc" id="L662" title="All 2 branches missed.">                    if (clipRight &gt; clipLeft) {</span>
+<span class="nc" id="L663">                        shapeRenderer.rect(clipLeft, y, clipRight - clipLeft, height);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L668">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

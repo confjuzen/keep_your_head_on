@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BodyPartLoader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">core</a> &gt; <a href="index.source.html" class="el_package">io.github.abomination.body</a> &gt; <span class="el_source">BodyPartLoader.java</span></div><h1>BodyPartLoader.java</h1><pre class="source lang-java linenums">package io.github.abomination.body;
+
+import io.github.abomination.PlayerClass;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class BodyPartLoader {
+<span class="nc" id="L13">    private final Map&lt;String, BodyPart&gt; bodyParts = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L14">    private final Map&lt;BodyPartType, List&lt;BodyPart&gt;&gt; partsByType = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L16">    public BodyPartLoader(FileHandle file) {</span>
+<span class="nc" id="L17">        loadBodyParts(file);</span>
+<span class="nc" id="L18">    }</span>
+
+    private void loadBodyParts(FileHandle file) {
+<span class="nc" id="L21">        JsonReader jsonReader = new JsonReader();</span>
+<span class="nc" id="L22">        JsonValue root = jsonReader.parse(file);</span>
+
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        for (JsonValue partEntry : root) {</span>
+<span class="nc" id="L25">            String id = partEntry.name;</span>
+<span class="nc" id="L26">            JsonValue partData = partEntry;</span>
+
+            // Convert the class string to title case to match the enum
+<span class="nc" id="L29">            String className = partData.getString(&quot;class&quot;, &quot;Human&quot;);</span>
+<span class="nc" id="L30">            className = className.substring(0, 1).toUpperCase() + className.substring(1).toLowerCase();</span>
+            
+<span class="nc" id="L32">            BodyPart part = new BodyPart(</span>
+                    id,
+<span class="nc" id="L34">                    partData.getString(&quot;name&quot;),</span>
+<span class="nc" id="L35">                    BodyPartType.valueOf(partData.getString(&quot;type&quot;)),</span>
+<span class="nc" id="L36">                    PlayerClass.valueOf(className),</span>
+<span class="nc" id="L37">                    partData.getInt(&quot;health&quot;, 0),</span>
+<span class="nc" id="L38">                    partData.getInt(&quot;damage&quot;, 0),</span>
+<span class="nc" id="L39">                    partData.getInt(&quot;speed&quot;, 0),</span>
+<span class="nc" id="L40">                    partData.getString(&quot;texture&quot;));</span>
+
+<span class="nc" id="L42">            bodyParts.put(id, part);</span>
+<span class="nc" id="L43">            partsByType.computeIfAbsent(part.getType(), k -&gt; new ArrayList&lt;&gt;()).add(part);</span>
+<span class="nc" id="L44">        }</span>
+<span class="nc" id="L45">    }</span>
+
+    public BodyPart getBodyPart(String id) {
+<span class="nc" id="L48">        return bodyParts.get(id);</span>
+    }
+
+    public List&lt;BodyPart&gt; getBodyPartsOfType(BodyPartType type) {
+<span class="nc" id="L52">        return new ArrayList&lt;&gt;(partsByType.getOrDefault(type, new ArrayList&lt;&gt;()));</span>
+    }
+
+    public BodyPart getRandomBodyPart(BodyPartType type) {
+<span class="nc" id="L56">        return getRandomBodyPart(type, null);</span>
+    }
+    
+    public BodyPart getRandomBodyPart(BodyPartType type, PlayerClass playerClass) {
+<span class="nc" id="L60">        List&lt;BodyPart&gt; parts = partsByType.getOrDefault(type, new ArrayList&lt;&gt;());</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (parts.isEmpty()) {</span>
+<span class="nc" id="L62">            return null;</span>
+        }
+        
+        // If a specific player class is provided, filter parts by that class
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (playerClass != null) {</span>
+<span class="nc" id="L67">            List&lt;BodyPart&gt; filteredParts = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">            for (BodyPart part : parts) {</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">                if (part.getPlayerClass() == playerClass) {</span>
+<span class="nc" id="L70">                    filteredParts.add(part);</span>
+                }
+<span class="nc" id="L72">            }</span>
+            
+            // If no parts match the class, fall back to any part
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (!filteredParts.isEmpty()) {</span>
+<span class="nc" id="L76">                parts = filteredParts;</span>
+            }
+        }
+        
+<span class="nc" id="L80">        return parts.get((int) (Math.random() * parts.size()));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,66 @@
+{
+  "goat_head": {
+    "name": "Goat Head",
+    "type": "HEAD",
+    "health": 50,
+    "damage": 0,
+    "speed": 0,
+    "texture": "body_parts/goat_head.png"
+  },
+  "samurai_head": {
+    "name": "Samurai Head",
+    "type": "HEAD",
+    "health": 60,
+    "damage": 10,
+    "speed": 0,
+    "texture": "body_parts/samurai_head.png"
+  },
+  "unicorn_head": {
+    "name": "Unicorn Head",
+    "type": "HEAD",
+    "health": 40,
+    "damage": 5,
+    "speed": 5,
+    "texture": "body_parts/unicorn_head.png"
+  },
+  "unicorn_body": {
+    "name": "Unicorn Body",
+    "type": "BODY",
+    "health": 80,
+    "damage": 0,
+    "speed": 10,
+    "texture": "body_parts/unicorn_body.png"
+  },
+  "daemon_body": {
+    "name": "Daemon Torso",
+    "type": "BODY",
+    "health": 100,
+    "damage": 0,
+    "speed": 5,
+    "texture": "body_parts/daemon_body.png"
+  },
+  "daemon_right_arm": {
+    "name": "Daemon Right Arm",
+    "type": "RIGHT_ARM",
+    "health": 0,
+    "damage": 50,
+    "speed": 0,
+    "texture": "body_parts/daemon_arm.png"
+  },
+  "daemon_left_arm": {
+    "name": "Daemon Left Arm",
+    "type": "LEFT_ARM",
+    "health": 0,
+    "damage": 50,
+    "speed": 0,
+    "texture": "body_parts/daemon_arm.png"
+  },
+  "goat_legs": {
+    "name": "Goat Legs",
+    "type": "LEGS",
+    "health": 40,
+    "damage": 0,
+    "speed": 8,
+    "texture": "body_parts/goat_leg.png"
+  }
+}

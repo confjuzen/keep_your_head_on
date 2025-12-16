@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlayerClass.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">core</a> &gt; <a href="index.source.html" class="el_package">io.github.abomination</a> &gt; <span class="el_source">PlayerClass.java</span></div><h1>PlayerClass.java</h1><pre class="source lang-java linenums">package io.github.abomination;
+
+import java.util.*;
+
+<span class="fc" id="L5">public enum PlayerClass {</span>
+<span class="fc" id="L6">    Human,</span>
+<span class="fc" id="L7">    Zombie,</span>
+<span class="fc" id="L8">    Mythical,</span>
+<span class="fc" id="L9">    Robot,</span>
+<span class="fc" id="L10">    Daemon;</span>
+
+    private List&lt;PlayerClass&gt; strongAgainst;
+<span class="fc" id="L13">    private static final Random random = new Random();</span>
+
+    static {
+<span class="fc" id="L16">        Human.strongAgainst = List.of(Zombie, Robot);</span>
+<span class="fc" id="L17">        Zombie.strongAgainst = List.of(Mythical, Daemon);</span>
+<span class="fc" id="L18">        Mythical.strongAgainst = List.of(Robot, Human);</span>
+<span class="fc" id="L19">        Robot.strongAgainst = List.of(Daemon, Zombie);</span>
+<span class="fc" id="L20">        Daemon.strongAgainst = List.of(Human, Mythical);</span>
+<span class="fc" id="L21">    }</span>
+
+    public List&lt;PlayerClass&gt; getStrongAgainst() {
+<span class="fc" id="L24">        return strongAgainst;</span>
+    }
+
+    /** Returns a random strong-against class */
+    public PlayerClass getRandomStrongAgainst() {
+<span class="pc bpc" id="L29" title="2 of 4 branches missed.">        if (strongAgainst == null || strongAgainst.isEmpty()) {</span>
+<span class="nc" id="L30">            return null;</span>
+        }
+<span class="fc" id="L32">        return strongAgainst.get(random.nextInt(strongAgainst.size()));</span>
+    }
+
+    /** Returns true if this class is strong against the specified class */
+    public boolean isStrongAgainst(PlayerClass other) {
+<span class="pc bpc" id="L37" title="1 of 4 branches missed.">        return strongAgainst != null &amp;&amp; strongAgainst.contains(other);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

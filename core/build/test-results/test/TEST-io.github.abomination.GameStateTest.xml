@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.abomination.GameStateTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-12-16T13:48:03.513Z" hostname="goblin" time="0.099">
+  <properties/>
+  <testcase name="spendMoneyOnlyIfEnough()" classname="io.github.abomination.GameStateTest" time="0.075"/>
+  <testcase name="moneyAddAndClamp()" classname="io.github.abomination.GameStateTest" time="0.004"/>
+  <testcase name="nextLevelAndEnemyRateMultiplierDefault()" classname="io.github.abomination.GameStateTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

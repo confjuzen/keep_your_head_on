@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.abomination.PlayerClassTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2025-12-16T13:48:03.625Z" hostname="goblin" time="0.11">
+  <properties/>
+  <testcase name="humanStrongAgainstZombieAndRobot()" classname="io.github.abomination.PlayerClassTest" time="0.005"/>
+  <testcase name="repetition 1 of 10" classname="io.github.abomination.PlayerClassTest" time="0.009"/>
+  <testcase name="repetition 2 of 10" classname="io.github.abomination.PlayerClassTest" time="0.002"/>
+  <testcase name="repetition 3 of 10" classname="io.github.abomination.PlayerClassTest" time="0.003"/>
+  <testcase name="repetition 4 of 10" classname="io.github.abomination.PlayerClassTest" time="0.002"/>
+  <testcase name="repetition 5 of 10" classname="io.github.abomination.PlayerClassTest" time="0.002"/>
+  <testcase name="repetition 6 of 10" classname="io.github.abomination.PlayerClassTest" time="0.002"/>
+  <testcase name="repetition 7 of 10" classname="io.github.abomination.PlayerClassTest" time="0.003"/>
+  <testcase name="repetition 8 of 10" classname="io.github.abomination.PlayerClassTest" time="0.002"/>
+  <testcase name="repetition 9 of 10" classname="io.github.abomination.PlayerClassTest" time="0.004"/>
+  <testcase name="repetition 10 of 10" classname="io.github.abomination.PlayerClassTest" time="0.002"/>
+  <testcase name="daemonStrongAgainstHumanAndMythical()" classname="io.github.abomination.PlayerClassTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

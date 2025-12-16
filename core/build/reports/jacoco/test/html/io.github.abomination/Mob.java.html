@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Mob.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">core</a> &gt; <a href="index.source.html" class="el_package">io.github.abomination</a> &gt; <span class="el_source">Mob.java</span></div><h1>Mob.java</h1><pre class="source lang-java linenums">package io.github.abomination;
+
+import io.github.abomination.body.BodyPart;
+import io.github.abomination.body.BodyPartLoader;
+import io.github.abomination.body.BodyPartType;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import java.util.*;
+
+public class Mob extends Unit {
+    protected PlayerClass playerClass;
+    protected static final float WIDTH = 100f; // Default width for mob
+    protected static final float HEIGHT = 100f; // Default height for mob
+    protected static final float WORLD_WIDTH = 1200f;
+    protected static BodyPartLoader bodyPartLoader;
+
+    protected float laneHight;
+    protected float lanePosition;
+
+<span class="nc" id="L22">    protected boolean isEnemy = false; // Changed from Boolean to boolean to avoid autoboxing issues</span>
+<span class="nc" id="L23">    protected boolean isInCombat = false;</span>
+<span class="nc" id="L24">    protected float attackCooldown = 0f;</span>
+    protected static final float ATTACK_RANGE = 50f;
+    protected static final float ATTACK_COOLDOWN = 1f; // seconds
+
+    protected BodyPart head;
+    protected BodyPart body;
+    protected BodyPart leftArm;
+    protected BodyPart rightArm;
+    protected BodyPart leftLeg;
+    protected BodyPart rightLeg;
+
+    // Total attributes calculated from body parts
+    protected int totalHealth;
+    protected int totalDamage;
+    protected int totalSpeed;
+    private GameState gameState;
+    private static final BitmapFont DAMAGE_FONT;
+<span class="nc" id="L41">    private float damageDisplayTime = 0f;</span>
+<span class="nc" id="L42">    private float lastDamageAmount = 0f;</span>
+<span class="nc" id="L43">    private float lastDamageMultiplier = 1f;</span>
+<span class="nc" id="L44">    private final Animation animation = new Animation();</span>
+<span class="nc" id="L45">    private boolean isDead = false;</span>
+<span class="nc" id="L46">    private boolean deathFinishedOnce = false;</span>
+<span class="nc" id="L47">    private float attackAnimTimer = 0f;</span>
+    private static final float ATTACK_ANIM_DURATION = 0.35f;
+
+    public GameState getGameState() {
+<span class="nc" id="L51">        return gameState;</span>
+    }
+
+    public void setGameState(GameState gameState) {
+<span class="nc" id="L55">        this.gameState = gameState;</span>
+<span class="nc" id="L56">    }</span>
+
+    /**
+     * Returns a preview texture for this mob to be shown during drag operations.
+     * For now, returns the head texture if available, or a default texture.
+     */
+    public com.badlogic.gdx.graphics.Texture getPreviewTexture() {
+<span class="nc bnc" id="L63" title="All 4 branches missed.">        if (head != null &amp;&amp; head.getTexture() != null) {</span>
+<span class="nc" id="L64">            return head.getTexture();</span>
+        }
+        // Return a default texture if head texture is not available
+<span class="nc" id="L67">        return new com.badlogic.gdx.graphics.Texture(Gdx.files.internal(&quot;default_mob.png&quot;));</span>
+    }
+
+    public static void initialize(BodyPartLoader loader) {
+<span class="nc" id="L71">        bodyPartLoader = loader;</span>
+<span class="nc" id="L72">    }</span>
+
+    public Mob(float height) {
+<span class="nc" id="L75">        this(height, PlayerClass.Human); // Default to Human class if none specified</span>
+<span class="nc" id="L76">    }</span>
+
+    public Mob(float height, PlayerClass playerClass) {
+<span class="nc" id="L79">        super(0);</span>
+<span class="nc" id="L80">        this.playerClass = playerClass;</span>
+<span class="nc" id="L81">        this.laneHight = height;</span>
+
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (bodyPartLoader != null) {</span>
+            // Use class-specific body parts if a class is specified
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (playerClass != null) {</span>
+<span class="nc" id="L86">                this.head = bodyPartLoader.getRandomBodyPart(BodyPartType.HEAD, playerClass);</span>
+<span class="nc" id="L87">                this.body = bodyPartLoader.getRandomBodyPart(BodyPartType.BODY, playerClass);</span>
+<span class="nc" id="L88">                this.leftArm = bodyPartLoader.getRandomBodyPart(BodyPartType.LEFT_ARM, playerClass);</span>
+<span class="nc" id="L89">                this.rightArm = bodyPartLoader.getRandomBodyPart(BodyPartType.RIGHT_ARM, playerClass);</span>
+<span class="nc" id="L90">                this.rightLeg = bodyPartLoader.getRandomBodyPart(BodyPartType.RIGHT_LEG, playerClass);</span>
+<span class="nc" id="L91">                this.leftLeg = bodyPartLoader.getRandomBodyPart(BodyPartType.LEFT_LEG, playerClass);</span>
+            } else {
+                // Fall back to random parts if no class is specified
+<span class="nc" id="L94">                this.head = bodyPartLoader.getRandomBodyPart(BodyPartType.HEAD);</span>
+<span class="nc" id="L95">                this.body = bodyPartLoader.getRandomBodyPart(BodyPartType.BODY);</span>
+<span class="nc" id="L96">                this.leftArm = bodyPartLoader.getRandomBodyPart(BodyPartType.LEFT_ARM);</span>
+<span class="nc" id="L97">                this.rightArm = bodyPartLoader.getRandomBodyPart(BodyPartType.RIGHT_ARM);</span>
+<span class="nc" id="L98">                this.leftLeg = bodyPartLoader.getRandomBodyPart(BodyPartType.LEFT_LEG);</span>
+<span class="nc" id="L99">                this.rightLeg = bodyPartLoader.getRandomBodyPart(BodyPartType.RIGHT_LEG);</span>
+<span class="nc" id="L100">                this.playerClass = determinePlayerClass();</span>
+            }
+
+            // Calculate and set initial attributes
+<span class="nc" id="L104">            calculateAttributes();</span>
+        } else {
+<span class="nc" id="L106">            throw new IllegalStateException(&quot;BodyPartLoader not initialized. Call Mob.initialize() first.&quot;);</span>
+        }
+<span class="nc" id="L108">    }</span>
+
+    static {
+        BitmapFont f;
+        try {
+<span class="nc" id="L113">            f = FontFactory.loadKnewave(32, Color.WHITE);</span>
+<span class="nc" id="L114">        } catch (Exception e) {</span>
+<span class="nc" id="L115">            f = new BitmapFont();</span>
+<span class="nc" id="L116">        }</span>
+<span class="nc" id="L117">        DAMAGE_FONT = f;</span>
+<span class="nc" id="L118">    }</span>
+
+    public Mob(Mob other, float laneHight) {
+<span class="nc" id="L121">        super(0);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (other == null) {</span>
+<span class="nc" id="L123">            throw new IllegalArgumentException(&quot;Other mob cannot be null&quot;);</span>
+        }
+<span class="nc" id="L125">        this.playerClass = other.playerClass;</span>
+<span class="nc" id="L126">        this.laneHight = laneHight;</span>
+<span class="nc" id="L127">        this.head = other.head;</span>
+<span class="nc" id="L128">        this.body = other.body;</span>
+<span class="nc" id="L129">        this.leftArm = other.leftArm;</span>
+<span class="nc" id="L130">        this.rightArm = other.rightArm;</span>
+<span class="nc" id="L131">        this.leftLeg = other.leftLeg;</span>
+<span class="nc" id="L132">        this.rightLeg = other.rightLeg;</span>
+<span class="nc" id="L133">        calculateAttributes();</span>
+<span class="nc" id="L134">    }</span>
+
+    public void setHead(BodyPart head) {
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (head.getType() != BodyPartType.HEAD) {</span>
+<span class="nc" id="L138">            throw new IllegalArgumentException(&quot;Invalid body part type for head&quot;);</span>
+        }
+<span class="nc" id="L140">        this.head = head;</span>
+<span class="nc" id="L141">    }</span>
+
+    public void setBody(BodyPart body) {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (body.getType() != BodyPartType.BODY) {</span>
+<span class="nc" id="L145">            throw new IllegalArgumentException(&quot;Invalid body part type for body&quot;);</span>
+        }
+<span class="nc" id="L147">        this.body = body;</span>
+<span class="nc" id="L148">    }</span>
+
+    public void setLeftLeg(BodyPart leg) {
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (leg.getType() != BodyPartType.LEFT_LEG) {</span>
+<span class="nc" id="L152">            throw new IllegalArgumentException(&quot;Invalid body part type for left leg&quot;);</span>
+        }
+<span class="nc" id="L154">        this.leftLeg = leg;</span>
+<span class="nc" id="L155">    }</span>
+
+    public void setRightLeg(BodyPart leg) {
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (leg.getType() != BodyPartType.RIGHT_LEG) {</span>
+<span class="nc" id="L159">            throw new IllegalArgumentException(&quot;Invalid body part type for right leg&quot;);</span>
+        }
+<span class="nc" id="L161">        this.rightLeg = leg;</span>
+<span class="nc" id="L162">    }</span>
+
+    public void setLeftArm(BodyPart leftArm) {
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (leftArm.getType() != BodyPartType.LEFT_ARM) {</span>
+<span class="nc" id="L166">            throw new IllegalArgumentException(&quot;Invalid body part type for left arm&quot;);</span>
+        }
+<span class="nc" id="L168">        this.leftArm = leftArm;</span>
+<span class="nc" id="L169">    }</span>
+
+    public void setRightArm(BodyPart rightArm) {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (rightArm.getType() != BodyPartType.RIGHT_ARM) {</span>
+<span class="nc" id="L173">            throw new IllegalArgumentException(&quot;Invalid body part type for right arm&quot;);</span>
+        }
+<span class="nc" id="L175">        this.rightArm = rightArm;</span>
+<span class="nc" id="L176">    }</span>
+
+    protected void calculateAttributes() {
+        // Calculate total attributes from all body parts
+<span class="nc" id="L180">        List&lt;BodyPart&gt; allParts = Arrays.asList(head, body, leftArm, rightArm, leftLeg, rightLeg);</span>
+
+<span class="nc" id="L182">        this.totalHealth = allParts.stream()</span>
+<span class="nc" id="L183">                .filter(Objects::nonNull)</span>
+<span class="nc" id="L184">                .mapToInt(BodyPart::getHealth)</span>
+<span class="nc" id="L185">                .sum();</span>
+
+<span class="nc" id="L187">        this.totalDamage = allParts.stream()</span>
+<span class="nc" id="L188">                .filter(Objects::nonNull)</span>
+<span class="nc" id="L189">                .mapToInt(BodyPart::getDamage)</span>
+<span class="nc" id="L190">                .sum();</span>
+
+<span class="nc" id="L192">        this.totalSpeed = allParts.stream()</span>
+<span class="nc" id="L193">                .filter(Objects::nonNull)</span>
+<span class="nc" id="L194">                .mapToInt(BodyPart::getSpeed)</span>
+<span class="nc" id="L195">                .sum();</span>
+
+        // Set initial health if not already set
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (getHealth() &lt;= 0) {</span>
+<span class="nc" id="L199">            setHealth(totalHealth);</span>
+        }
+<span class="nc" id="L201">    }</span>
+
+    public int getTotalSpeed() {
+<span class="nc" id="L204">        return totalSpeed;</span>
+    }
+
+    @Override
+    public float getTotalDamage() {
+<span class="nc" id="L209">        return (float) totalDamage;</span>
+    }
+
+    @Override
+    public void render(SpriteBatch batch) {
+        // Only move if not in combat and not at the edge of the screen
+<span class="nc bnc" id="L215" title="All 4 branches missed.">        if (!isInCombat &amp;&amp; !isDead) {</span>
+<span class="nc" id="L216">            float speed = getTotalSpeed() * Gdx.graphics.getDeltaTime();</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">            if (isEnemy) {</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">                if (lanePosition &gt; 100f) { // Don't move past a certain point for enemies</span>
+<span class="nc" id="L219">                    lanePosition -= speed;</span>
+                }
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            } else if (lanePosition &lt; WORLD_WIDTH - 150f) { // Don't move past the base for player mobs</span>
+<span class="nc" id="L222">                lanePosition += speed;</span>
+            }
+<span class="nc" id="L224">        } else {</span>
+<span class="nc" id="L225">            lanePosition = lanePosition;</span>
+        }
+<span class="nc" id="L227">        render(batch, WIDTH, HEIGHT);</span>
+<span class="nc" id="L228">    }</span>
+
+    public void render(SpriteBatch batch, float width, float height) {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (batch == null)</span>
+<span class="nc" id="L232">            return;</span>
+
+<span class="nc" id="L234">        float x = getX();</span>
+<span class="nc" id="L235">        float y = getY();</span>
+<span class="nc" id="L236">        float scale = width / WIDTH; // Calculate scale factor based on target width</span>
+<span class="nc" id="L237">        scale *= animation.getPulseScale();</span>
+        // Animation state variables
+<span class="nc" id="L239">        float ArmAnimationX = 0;</span>
+<span class="nc" id="L240">        float ArmAnimationY = 0;</span>
+<span class="nc" id="L241">        float legAnimationY = 0;</span>
+
+<span class="nc bnc" id="L243" title="All 4 branches missed.">        if (!isDead &amp;&amp; getHealth() &lt;= 0f) {</span>
+<span class="nc" id="L244">            markDead();</span>
+        }
+
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (isDead) {</span>
+<span class="nc" id="L248">            float baseAngle = animation.getDeathAngle();</span>
+<span class="nc" id="L249">            float baseBackOffset = animation.getDeathBackOffset();</span>
+<span class="nc" id="L250">            float fallOffsetY = animation.getDeathFallOffsetY();</span>
+
+<span class="nc bnc" id="L252" title="All 2 branches missed.">            float angle = baseAngle * (isEnemy ? -1f : 1f);</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">            float backOffset = baseBackOffset * (isEnemy ? -1f : 1f);</span>
+
+<span class="nc" id="L255">            float baseX = this.lanePosition + backOffset;</span>
+<span class="nc" id="L256">            float baseY = this.laneHight + fallOffsetY;</span>
+
+            // Use simplified positions for fallen body
+<span class="nc" id="L259">            float bodyW = 70 * scale;</span>
+<span class="nc" id="L260">            float bodyH = 70 * scale;</span>
+<span class="nc" id="L261">            float headW = 100 * scale;</span>
+<span class="nc" id="L262">            float headH = 100 * scale;</span>
+<span class="nc" id="L263">            float armW = 70 * scale;</span>
+<span class="nc" id="L264">            float armH = 70 * scale;</span>
+<span class="nc" id="L265">            float legW = 50 * scale;</span>
+<span class="nc" id="L266">            float legH = 50 * scale;</span>
+
+<span class="nc" id="L268">            boolean flip = false;</span>
+
+<span class="nc bnc" id="L270" title="All 2 branches missed.">            if (leftLeg != null) {</span>
+<span class="nc" id="L271">                leftLeg.renderRotated(batch,</span>
+                        baseX - 20 * scale,
+                        baseY,
+                        legW,
+                        legH,
+                        angle,
+                        flip);
+            }
+
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            if (rightLeg != null) {</span>
+<span class="nc" id="L281">                rightLeg.renderRotated(batch,</span>
+                        baseX + 20 * scale,
+                        baseY,
+                        legW,
+                        legH,
+                        angle,
+                        flip);
+            }
+
+<span class="nc bnc" id="L290" title="All 2 branches missed.">            if (body != null) {</span>
+<span class="nc" id="L291">                body.renderRotated(batch,</span>
+                        baseX,
+                        baseY + 25 * scale,
+                        bodyW,
+                        bodyH,
+                        angle,
+                        flip);
+            }
+
+<span class="nc bnc" id="L300" title="All 2 branches missed.">            if (leftArm != null) {</span>
+<span class="nc" id="L301">                leftArm.renderRotated(batch,</span>
+                        baseX - 35 * scale,
+                        baseY + 25 * scale,
+                        armW,
+                        armH,
+                        angle,
+                        flip);
+            }
+
+<span class="nc bnc" id="L310" title="All 2 branches missed.">            if (rightArm != null) {</span>
+<span class="nc" id="L311">                rightArm.renderRotated(batch,</span>
+                        baseX + 35 * scale,
+                        baseY + 25 * scale,
+                        armW,
+                        armH,
+                        angle,
+                        flip);
+            }
+
+<span class="nc bnc" id="L320" title="All 2 branches missed.">            if (head != null) {</span>
+<span class="nc" id="L321">                head.renderRotated(batch,</span>
+                        baseX,
+                        baseY + 65 * scale,
+                        headW,
+                        headH,
+                        angle,
+                        flip);
+            }
+
+<span class="nc bnc" id="L330" title="All 2 branches missed.">            if (damageDisplayTime &gt; 0f) {</span>
+<span class="nc" id="L331">                float originalScaleX = DAMAGE_FONT.getData().scaleX;</span>
+<span class="nc" id="L332">                float originalScaleY = DAMAGE_FONT.getData().scaleY;</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">                if (lastDamageMultiplier &gt; 1.0f) {</span>
+<span class="nc" id="L334">                    DAMAGE_FONT.getData().setScale(originalScaleX * 0.9f, originalScaleY * 0.9f);</span>
+                }
+                String text;
+<span class="nc bnc" id="L337" title="All 2 branches missed.">                if (lastDamageMultiplier &gt; 1.0f) {</span>
+<span class="nc" id="L338">                    text = (int) lastDamageAmount + &quot; x&quot; + (int) lastDamageMultiplier;</span>
+                } else {
+<span class="nc" id="L340">                    text = String.valueOf((int) lastDamageAmount);</span>
+                }
+<span class="nc" id="L342">                float textX = baseX;</span>
+<span class="nc" id="L343">                float textY = baseY + 65 * scale + 120 * scale;</span>
+<span class="nc" id="L344">                DAMAGE_FONT.draw(batch, text, textX, textY);</span>
+<span class="nc" id="L345">                DAMAGE_FONT.getData().setScale(originalScaleX, originalScaleY);</span>
+            }
+
+<span class="nc" id="L348">            return;</span>
+        }
+
+        // Update animation state based on movement and combat
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        if (attackAnimTimer &gt; 0f) {</span>
+            // One-off attack swing synced with combat hit
+<span class="nc" id="L354">            float t = 1f - (attackAnimTimer / ATTACK_ANIM_DURATION);</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">            if (t &lt; 0f)</span>
+<span class="nc" id="L356">                t = 0f;</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">            if (t &gt; 1f)</span>
+<span class="nc" id="L358">                t = 1f;</span>
+<span class="nc" id="L359">            float swing = (float) Math.sin(t * Math.PI); // 0 -&gt; 1 -&gt; 0</span>
+<span class="nc" id="L360">            float intensity = 10f;</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            ArmAnimationX = swing * intensity * (isEnemy ? -1f : 1f);</span>
+<span class="nc" id="L362">            ArmAnimationY = swing * intensity * 0.5f;</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        } else if (isInCombat) {</span>
+            // Idle combat animation - arms move back and forth (slower)
+<span class="nc" id="L365">            float combatArmSpeed = 2.5f; // Reduced from 5f</span>
+<span class="nc" id="L366">            float combatIntensity = 5f; // Kept the same for range of motion</span>
+<span class="nc" id="L367">            ArmAnimationX = (float) Math.sin(Gdx.graphics.getFrameId() * 0.05f * combatArmSpeed) * combatIntensity;</span>
+<span class="nc" id="L368">            ArmAnimationY = (float) -Math.sin(Gdx.graphics.getFrameId() * 0.05f * combatArmSpeed) * combatIntensity;</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">        } else if (Math.abs(getTotalSpeed()) &gt; 0.1f) {</span>
+            // Walking animation - arms and legs move opposite to each other (slower)
+<span class="nc" id="L371">            float walkSpeed = getTotalSpeed() * 0.05f; // Reduced from 0.1f</span>
+<span class="nc" id="L372">            float armSwing = (float) Math.sin(Gdx.graphics.getFrameId() * 0.1f * walkSpeed) * 8f; // Reduced from 0.2f</span>
+<span class="nc" id="L373">            ArmAnimationX = armSwing;</span>
+<span class="nc" id="L374">            ArmAnimationY = -armSwing;</span>
+<span class="nc" id="L375">            legAnimationY = (float) Math.sin(Gdx.graphics.getFrameId() * 0.1f * walkSpeed + Math.PI) * 3f; // Reduced</span>
+                                                                                                           // from 0.2f
+        }
+
+        // Render body parts with animation offsets
+        // For enemies, we'll flip the sprites horizontally by using negative width
+<span class="nc bnc" id="L381" title="All 2 branches missed.">        float leftArmWidth = isEnemy ? -70 * scale : 70 * scale;</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        float rightArmWidth = isEnemy ? -70 * scale : 70 * scale;</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">        float leftLegWidth = isEnemy ? -50 * scale : 50 * scale;</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">        float rightLegWidth = isEnemy ? -50 * scale : 50 * scale;</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">        float bodyWidth = isEnemy ? -70 * scale : 70 * scale;</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">        float headWidth = isEnemy ? -100 * scale : 100 * scale; // Make head flip too</span>
+
+        // Adjust positions for flipped sprites
+<span class="nc bnc" id="L389" title="All 2 branches missed.">        float leftArmX = isEnemy ? this.lanePosition - 50 * scale - ArmAnimationX</span>
+<span class="nc" id="L390">                : 50 * scale + this.lanePosition + ArmAnimationX;</span>
+
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        float rightArmX = isEnemy ? this.lanePosition + x * scale + ArmAnimationX</span>
+<span class="nc" id="L393">                : x * scale + this.lanePosition - ArmAnimationX;</span>
+
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        float bodyX = isEnemy ? this.lanePosition - 15 * scale : 15 * scale + this.lanePosition;</span>
+
+        // Head position - centered above body for both player and enemy
+<span class="nc bnc" id="L398" title="All 2 branches missed.">        float headX = isEnemy ? this.lanePosition + x * scale : // Adjusted for enemy</span>
+<span class="nc" id="L399">                x * scale + this.lanePosition;</span>
+
+        // Left Arm
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        if (leftArm != null) {</span>
+<span class="nc" id="L403">            leftArm.render(batch,</span>
+                    leftArmX,
+                    30 * scale + this.laneHight + ArmAnimationY,
+                    leftArmWidth,
+                    70 * scale);
+        }
+
+        // Right Leg (left leg when flipped)
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (rightLeg != null) {</span>
+<span class="nc" id="L412">            rightLeg.render(batch,</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">                    isEnemy ? this.lanePosition - 50 * scale : 50 * scale + this.lanePosition,</span>
+                    (0 + legAnimationY) * scale + this.laneHight,
+<span class="nc bnc" id="L415" title="All 2 branches missed.">                    isEnemy ? -50 * scale : 50 * scale,</span>
+                    50 * scale);
+        }
+
+        // Body
+<span class="nc bnc" id="L420" title="All 2 branches missed.">        if (body != null) {</span>
+<span class="nc" id="L421">            body.render(batch,</span>
+                    bodyX,
+                    40 * scale + this.laneHight,
+                    bodyWidth,
+                    70 * scale);
+        }
+
+        // Left Leg (right leg when flipped)
+<span class="nc bnc" id="L429" title="All 2 branches missed.">        if (leftLeg != null) {</span>
+<span class="nc" id="L430">            leftLeg.render(batch,</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">                    isEnemy ? this.lanePosition - 15 * scale : 15 * scale + this.lanePosition,</span>
+                    (0 - legAnimationY) * scale + this.laneHight,
+<span class="nc bnc" id="L433" title="All 2 branches missed.">                    isEnemy ? -50 * scale : 50 * scale,</span>
+                    50 * scale);
+        }
+
+        // Right Arm
+<span class="nc bnc" id="L438" title="All 2 branches missed.">        if (rightArm != null) {</span>
+<span class="nc" id="L439">            rightArm.render(batch,</span>
+                    rightArmX,
+                    30 * scale + this.laneHight - ArmAnimationY,
+                    rightArmWidth,
+                    70 * scale);
+        }
+        // Head rendering with proper flipping
+<span class="nc bnc" id="L446" title="All 2 branches missed.">        if (head != null) {</span>
+<span class="nc" id="L447">            head.render(batch,</span>
+                    headX,
+                    75 * scale + this.laneHight,
+                    headWidth, // This will be negative for enemies to flip the head
+                    100 * scale);
+        }
+<span class="nc bnc" id="L453" title="All 2 branches missed.">        if (damageDisplayTime &gt; 0f) {</span>
+<span class="nc" id="L454">            float originalScaleX = DAMAGE_FONT.getData().scaleX;</span>
+<span class="nc" id="L455">            float originalScaleY = DAMAGE_FONT.getData().scaleY;</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">            if (lastDamageMultiplier &gt; 1.0f) {</span>
+<span class="nc" id="L457">                DAMAGE_FONT.getData().setScale(originalScaleX * 0.9f, originalScaleY * 0.9f);</span>
+            }
+            String text;
+<span class="nc bnc" id="L460" title="All 2 branches missed.">            if (lastDamageMultiplier &gt; 1.0f) {</span>
+<span class="nc" id="L461">                int base = (int) (lastDamageAmount / lastDamageMultiplier);</span>
+<span class="nc" id="L462">                text = (int) lastDamageAmount + &quot; x&quot; + (int) lastDamageMultiplier;</span>
+<span class="nc" id="L463">            } else {</span>
+<span class="nc" id="L464">                text = String.valueOf((int) lastDamageAmount);</span>
+            }
+<span class="nc" id="L466">            float textX = this.lanePosition;</span>
+<span class="nc" id="L467">            float textY = 75 * scale + this.laneHight + 120 * scale;</span>
+<span class="nc" id="L468">            DAMAGE_FONT.draw(batch, text, textX, textY);</span>
+<span class="nc" id="L469">            DAMAGE_FONT.getData().setScale(originalScaleX, originalScaleY);</span>
+        }
+<span class="nc" id="L471">    }</span>
+
+    @Override
+    public void takeDamage(float amount) {
+<span class="nc" id="L475">        int before = getHealth();</span>
+<span class="nc" id="L476">        super.takeDamage(amount);</span>
+<span class="nc" id="L477">        System.out.println(&quot;mobDamaged&quot;);</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        if (getHealth() &lt; before) {</span>
+<span class="nc" id="L479">            animation.triggerPulse(0.15f, 0.15f);</span>
+        }
+<span class="nc" id="L481">    }</span>
+
+    public void onHit(float damage, float multiplier) {
+<span class="nc" id="L484">        lastDamageAmount = damage;</span>
+<span class="nc" id="L485">        lastDamageMultiplier = multiplier;</span>
+<span class="nc" id="L486">        damageDisplayTime = 0.5f;</span>
+<span class="nc" id="L487">    }</span>
+
+    @Override
+    public void dispose() {
+<span class="nc" id="L491">        head = null;</span>
+<span class="nc" id="L492">        body = null;</span>
+<span class="nc" id="L493">        leftArm = null;</span>
+<span class="nc" id="L494">        rightArm = null;</span>
+<span class="nc" id="L495">        leftLeg = null;</span>
+<span class="nc" id="L496">        rightLeg = null;</span>
+<span class="nc" id="L497">    }</span>
+
+    public static Mob createRandomMob(PlayerClass playerClass, float hight) {
+<span class="nc" id="L500">        return new Mob(hight, playerClass);</span>
+    }
+
+    public static Mob createRandomMob(String type, float hight) {
+<span class="nc" id="L504">        return createRandomMob(PlayerClass.valueOf(type), hight);</span>
+    }
+
+    public BodyPart getHead() {
+<span class="nc" id="L508">        return head;</span>
+    }
+
+    public BodyPart getBody() {
+<span class="nc" id="L512">        return body;</span>
+    }
+
+    public BodyPart getLeftArm() {
+<span class="nc" id="L516">        return leftArm;</span>
+    }
+
+    public BodyPart getRightArm() {
+<span class="nc" id="L520">        return rightArm;</span>
+    }
+
+    public boolean isInCombat() {
+<span class="nc" id="L524">        return isInCombat;</span>
+    }
+
+    public void setInCombat(boolean inCombat) {
+<span class="nc" id="L528">        this.isInCombat = inCombat;</span>
+<span class="nc" id="L529">    }</span>
+
+    /**
+     * Updates the mob's state each frame
+     *
+     * @param deltaTime Time since last frame in seconds
+     */
+    public void update(float deltaTime) {
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (isInCombat) {</span>
+<span class="nc" id="L538">            attackCooldown -= deltaTime;</span>
+        }
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        if (damageDisplayTime &gt; 0f) {</span>
+<span class="nc" id="L541">            damageDisplayTime -= deltaTime;</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">            if (damageDisplayTime &lt; 0f) {</span>
+<span class="nc" id="L543">                damageDisplayTime = 0f;</span>
+            }
+        }
+<span class="nc bnc" id="L546" title="All 2 branches missed.">        if (attackAnimTimer &gt; 0f) {</span>
+<span class="nc" id="L547">            attackAnimTimer -= deltaTime;</span>
+<span class="nc bnc" id="L548" title="All 2 branches missed.">            if (attackAnimTimer &lt; 0f) {</span>
+<span class="nc" id="L549">                attackAnimTimer = 0f;</span>
+            }
+        }
+<span class="nc" id="L552">        animation.update(deltaTime);</span>
+<span class="nc" id="L553">    }</span>
+
+    public void triggerKillPulse() {
+<span class="nc" id="L556">        animation.triggerPulse(0.15f, 0.15f);</span>
+<span class="nc" id="L557">    }</span>
+
+    public boolean isDead() {
+<span class="nc" id="L560">        return isDead;</span>
+    }
+
+    public void markDead() {
+<span class="nc bnc" id="L564" title="All 2 branches missed.">        if (!isDead) {</span>
+<span class="nc" id="L565">            isDead = true;</span>
+<span class="nc" id="L566">            deathFinishedOnce = false;</span>
+<span class="nc" id="L567">            String tag = &quot;mob=&quot; + this + &quot;, enemy=&quot; + isEnemy;</span>
+<span class="nc" id="L568">            animation.startDeath(tag, 0.5f);</span>
+<span class="nc" id="L569">            triggerKillPulse();</span>
+<span class="nc" id="L570">            setInCombat(false);</span>
+        }
+<span class="nc" id="L572">    }</span>
+
+    public boolean isReadyToDispose() {
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        if (!isDead)</span>
+<span class="nc" id="L576">            return false;</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">        if (!animation.isDeathFinished())</span>
+<span class="nc" id="L578">            return false;</span>
+<span class="nc bnc" id="L579" title="All 2 branches missed.">        if (!deathFinishedOnce) {</span>
+            // First frame after death animation finished: allow one more render
+<span class="nc" id="L581">            deathFinishedOnce = true;</span>
+<span class="nc" id="L582">            return false;</span>
+        }
+<span class="nc" id="L584">        return true;</span>
+    }
+
+    public void startAttackAnimation() {
+<span class="nc" id="L588">        attackAnimTimer = ATTACK_ANIM_DURATION;</span>
+<span class="nc" id="L589">    }</span>
+
+    public float getLanePosition() {
+<span class="nc" id="L592">        return lanePosition;</span>
+    }
+
+    public boolean isEnemy() {
+<span class="nc" id="L596">        return isEnemy;</span>
+    }
+
+    public void setEnemy(boolean isEnemy) {
+<span class="nc" id="L600">        this.isEnemy = isEnemy;</span>
+<span class="nc" id="L601">    }</span>
+
+
+    public PlayerClass getPlayerClass() {
+<span class="nc" id="L605">        return playerClass;</span>
+    }
+
+    public PlayerClass determinePlayerClass() {
+<span class="nc" id="L609">        Map&lt;PlayerClass, Integer&gt; classCount = new HashMap&lt;&gt;();</span>
+
+<span class="nc bnc" id="L611" title="All 2 branches missed.">        for (BodyPart part : Arrays.asList(head, body, leftArm, rightArm, leftLeg, rightLeg)) {</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">            if (part != null) {</span>
+<span class="nc" id="L613">                PlayerClass partClass = part.getPlayerClass();</span>
+<span class="nc" id="L614">                classCount.put(partClass, classCount.getOrDefault(partClass, 0) + 1);</span>
+            }
+<span class="nc" id="L616">        }</span>
+
+<span class="nc" id="L618">        PlayerClass mostCommonClass = PlayerClass.Human; // Default to Human</span>
+<span class="nc" id="L619">        int maxCount = 0;</span>
+
+<span class="nc bnc" id="L621" title="All 2 branches missed.">        for (Map.Entry&lt;PlayerClass, Integer&gt; entry : classCount.entrySet()) {</span>
+<span class="nc bnc" id="L622" title="All 2 branches missed.">            if (entry.getValue() &gt; maxCount) {</span>
+<span class="nc" id="L623">                mostCommonClass = entry.getKey();</span>
+<span class="nc" id="L624">                maxCount = entry.getValue();</span>
+            }
+<span class="nc" id="L626">        }</span>
+
+<span class="nc" id="L628">        return mostCommonClass;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

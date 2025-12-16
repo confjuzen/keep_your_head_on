@@ -1,0 +1,124 @@
+buildscript {
+  repositories {
+    mavenCentral()
+    gradlePluginPortal()
+    mavenLocal()
+    google()
+    maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
+  }
+  dependencies {
+
+
+  }
+}
+
+allprojects {
+  apply plugin: 'eclipse'
+  apply plugin: 'idea'
+
+  // This allows you to "Build and run using IntelliJ IDEA", an option in IDEA's Settings.
+  idea {
+    module {
+      outputDir file('build/classes/java/main')
+      testOutputDir file('build/classes/java/test')
+    }
+  }
+}
+
+configure(subprojects) {
+  apply plugin: 'java-library'
+  apply plugin: 'jacoco'
+  sourceCompatibility = 8
+
+  dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.0"
+  }
+
+  // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
+  // The article can be helpful when using assets.txt in your project.
+  tasks.register('generateAssetList') {
+    inputs.dir("${project.rootDir}/assets/")
+    // projectFolder/assets
+    File assetsFolder = new File("${project.rootDir}/assets/")
+    // projectFolder/assets/assets.txt
+    File assetsFile = new File(assetsFolder, "assets.txt")
+    // delete that file in case we've already created it
+    assetsFile.delete()
+
+    // iterate through all files inside that folder
+    // convert it to a relative path
+    // and append it to the file assets.txt
+    fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.sort().each {
+      assetsFile.append(it + "\n")
+    }
+  }
+  processResources.dependsOn 'generateAssetList'
+
+  // Configure Javadoc for all subprojects
+  tasks.withType(Javadoc) {
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
+    options.docEncoding = 'UTF-8'
+    // Link to external APIs (Java and LibGDX)
+    options.links('https://docs.oracle.com/en/java/javase/17/docs/api/')
+    options.links("https://javadoc.io/doc/com.badlogicgames.gdx/gdx/${gdxVersion}/")
+    failOnError = false
+  }
+
+  test {
+    useJUnitPlatform()
+    testLogging {
+      events "passed", "skipped", "failed"
+      exceptionFormat "full"
+      showStandardStreams = true
+    }
+    reports {
+      junitXml.required = true
+      html.required = true
+    }
+    finalizedBy jacocoTestReport
+  }
+
+  jacocoTestReport {
+    dependsOn test
+    reports {
+      xml.required = true
+      csv.required = false
+      html.required = true
+    }
+  }
+
+  compileJava {
+    options.incremental = true
+  }
+}
+
+subprojects {
+  version = "$projectVersion"
+  ext.appName = 'Abomination'
+  repositories {
+    mavenCentral()
+//    maven { url 'https://s01.oss.sonatype.org' }
+    // You may want to remove the following line if you have errors downloading dependencies.
+    mavenLocal()
+//    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+//    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
+    maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
+    maven { url 'https://jitpack.io' }
+  }
+}
+
+// Aggregate Javadoc for all Java subprojects into one site
+tasks.register('javadocAll', Javadoc) {
+  group = 'documentation'
+  description = 'Generates aggregated Javadoc for all modules.'
+  destinationDir = file("$buildDir/docs/javadoc-all")
+  def javaProjects = subprojects.findAll { it.plugins.hasPlugin('java') || it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('application') }
+  source javaProjects.collect { it.sourceSets.main.allJava }
+  classpath = files(javaProjects.collect { it.sourceSets.main.compileClasspath })
+  dependsOn javaProjects.collect { it.tasks.matching { t -> t.name == 'classes' } }
+}
+
+eclipse.project.name = 'Abomination' + '-parent'
+

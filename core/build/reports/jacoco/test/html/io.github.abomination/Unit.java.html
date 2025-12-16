@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Unit.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">core</a> &gt; <a href="index.source.html" class="el_package">io.github.abomination</a> &gt; <span class="el_source">Unit.java</span></div><h1>Unit.java</h1><pre class="source lang-java linenums">package io.github.abomination;
+
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
+public abstract class Unit {
+    private int health;
+    protected float x;
+    protected float y;
+
+<span class="fc" id="L10">    public Unit(int health) {</span>
+<span class="fc" id="L11">        this.health = health;</span>
+<span class="fc" id="L12">        this.x = 0;</span>
+<span class="fc" id="L13">        this.y = 0;</span>
+<span class="fc" id="L14">    }</span>
+
+    public int getHealth() {
+<span class="fc" id="L17">        return health;</span>
+    }
+
+    public void setHealth(int health) {
+<span class="nc" id="L21">        this.health = health;</span>
+<span class="nc" id="L22">    }</span>
+
+<span class="fc" id="L24">    public float getX() { return x; }</span>
+<span class="fc" id="L25">    public float getY() { return y; }</span>
+<span class="nc" id="L26">    public void setX(float x) { this.x = x; }</span>
+<span class="nc" id="L27">    public void setY(float y) { this.y = y; }</span>
+<span class="fc" id="L28">    public void setPosition(float x, float y) { this.x = x; this.y = y; }</span>
+
+    public abstract void render(SpriteBatch batch);
+    public abstract void dispose();
+    
+    /**
+     * Gets the total damage this unit can deal in combat.
+     * @return The total damage as a float
+     */
+    public abstract float getTotalDamage();
+    
+    /**
+     * Applies damage to the unit.
+     * @param amount The amount of damage to apply
+     */
+    public void takeDamage(float amount) {
+<span class="fc" id="L44">        this.health = Math.max(0, this.health - (int)amount);</span>
+<span class="fc" id="L45">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

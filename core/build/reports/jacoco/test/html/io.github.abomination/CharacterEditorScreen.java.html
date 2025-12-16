@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CharacterEditorScreen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">core</a> &gt; <a href="index.source.html" class="el_package">io.github.abomination</a> &gt; <span class="el_source">CharacterEditorScreen.java</span></div><h1>CharacterEditorScreen.java</h1><pre class="source lang-java linenums">package io.github.abomination;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop;
+import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.math.Vector2;
+import io.github.abomination.body.BodyPart;
+import io.github.abomination.body.BodyPartType;
+import io.github.abomination.PlayerClass;
+import java.util.HashMap;
+import java.util.Map;
+
+import java.util.List;
+
+public class CharacterEditorScreen implements Screen {
+
+    private final Main game;
+    private final SpriteBatch batch;
+    private Texture background;
+    private OrthographicCamera camera;
+    private Viewport viewport;
+    private BitmapFont font;
+    private final int selectedMobIndex; // 0: mob1, 1: mob2, 2: mob3
+    private Mob selectedMob;
+
+    // Inventory UI
+    private Stage stage;
+    private Table inventoryTable;
+    private ScrollPane scrollPane;
+    private static final int INVENTORY_COLS = 2;
+    private static final float INVENTORY_ITEM_SIZE = 100f;
+    private static final float INVENTORY_PADDING = 10f;
+    private static final float INVENTORY_WIDTH = (INVENTORY_ITEM_SIZE + INVENTORY_PADDING) * INVENTORY_COLS
+            + INVENTORY_PADDING;
+    private static final float INVENTORY_HEIGHT = (INVENTORY_ITEM_SIZE + INVENTORY_PADDING) * 4 + INVENTORY_PADDING; // Fixed
+                                                                                                                     // height
+                                                                                                                     // for
+                                                                                                                     // 4
+                                                                                                                     // rows
+
+    private DragAndDrop dragAndDrop;
+    private com.badlogic.gdx.scenes.scene2d.Actor mobDropZone;
+    private Label tooltipLabel;
+
+<span class="nc" id="L63">    public CharacterEditorScreen(Main game, int mobIndex) {</span>
+<span class="nc" id="L64">        this.game = game;</span>
+<span class="nc" id="L65">        this.batch = game.batch;</span>
+<span class="nc" id="L66">        this.selectedMobIndex = mobIndex;</span>
+
+        // Initialize UI stage
+<span class="nc" id="L69">        this.stage = new Stage(new FitViewport(1200, 800));</span>
+<span class="nc" id="L70">        this.dragAndDrop = new DragAndDrop();</span>
+<span class="nc" id="L71">        Gdx.input.setInputProcessor(stage);</span>
+
+<span class="nc" id="L73">        camera = new OrthographicCamera();</span>
+<span class="nc" id="L74">        viewport = new FitViewport(1200, 800, camera);</span>
+<span class="nc" id="L75">        camera.position.set(</span>
+<span class="nc" id="L76">                viewport.getWorldWidth() / 2f,</span>
+<span class="nc" id="L77">                viewport.getWorldHeight() / 2f,</span>
+                0f);
+<span class="nc" id="L79">        camera.update();</span>
+
+<span class="nc" id="L81">        background = new Texture(&quot;mod_background.png&quot;);</span>
+
+        // Setup font
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (Gdx.files.internal(&quot;fonts/Knewave-Regular.ttf&quot;).exists()) {</span>
+<span class="nc" id="L85">            FreeTypeFontGenerator gen = new FreeTypeFontGenerator(</span>
+<span class="nc" id="L86">                    Gdx.files.internal(&quot;fonts/Knewave-Regular.ttf&quot;));</span>
+<span class="nc" id="L87">            FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();</span>
+<span class="nc" id="L88">            p.size = 40;</span>
+<span class="nc" id="L89">            p.color = Color.WHITE;</span>
+<span class="nc" id="L90">            font = gen.generateFont(p);</span>
+<span class="nc" id="L91">            gen.dispose();</span>
+<span class="nc" id="L92">        } else {</span>
+<span class="nc" id="L93">            font = new BitmapFont();</span>
+<span class="nc" id="L94">            font.getData().setScale(2f);</span>
+        }
+<span class="nc" id="L96">        updateSelectedMob();</span>
+
+        // Initialize inventory UI
+<span class="nc" id="L99">        createInventoryUI();</span>
+<span class="nc" id="L100">        createBodySlots();</span>
+<span class="nc" id="L101">        tooltipLabel = new Label(&quot;&quot;, new Label.LabelStyle(font, Color.WHITE));</span>
+<span class="nc" id="L102">        tooltipLabel.setVisible(false);</span>
+<span class="nc" id="L103">        stage.addActor(tooltipLabel);</span>
+<span class="nc" id="L104">    }</span>
+
+    private void createInventoryUI() {
+        // Create main table for the inventory
+<span class="nc" id="L108">        Table mainTable = new Table();</span>
+<span class="nc" id="L109">        mainTable.setFillParent(true);</span>
+<span class="nc" id="L110">        mainTable.bottom().right();</span>
+<span class="nc" id="L111">        mainTable.pad(80);</span>
+
+        // Create scrollable inventory table
+<span class="nc" id="L114">        inventoryTable = new Table();</span>
+<span class="nc" id="L115">        inventoryTable.defaults().size(INVENTORY_ITEM_SIZE).pad(INVENTORY_PADDING);</span>
+
+        // Add body parts to inventory
+<span class="nc" id="L118">        updateInventory();</span>
+
+        // Create scroll pane with default skin
+<span class="nc" id="L121">        scrollPane = new ScrollPane(inventoryTable);</span>
+<span class="nc" id="L122">        scrollPane.setFadeScrollBars(false);</span>
+<span class="nc" id="L123">        scrollPane.setForceScroll(false, true);</span>
+<span class="nc" id="L124">        scrollPane.setScrollingDisabled(true, false);</span>
+
+        // Add scroll pane to main table
+<span class="nc" id="L127">        mainTable.add(scrollPane).size(INVENTORY_WIDTH, INVENTORY_HEIGHT);</span>
+<span class="nc" id="L128">        stage.addActor(mainTable);</span>
+<span class="nc" id="L129">    }</span>
+
+    private void updateInventory() {
+<span class="nc" id="L132">        inventoryTable.clearChildren();</span>
+
+<span class="nc" id="L134">        List&lt;BodyPart&gt; inventory = game.getGameState().getInventory();</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">        if (inventory == null || inventory.isEmpty()) {</span>
+<span class="nc" id="L136">            return; // Don't show anything if inventory is empty</span>
+        }
+
+        // Add body parts to the grid in 2 columns
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        for (int i = 0; i &lt; inventory.size(); i++) {</span>
+<span class="nc" id="L141">            BodyPart part = inventory.get(i);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (part != null) {</span>
+<span class="nc" id="L143">                com.badlogic.gdx.scenes.scene2d.Actor actor = createBodyPartActor(part);</span>
+<span class="nc" id="L144">                addDragSource(actor, part);</span>
+<span class="nc" id="L145">                addHoverTooltip(actor, part);</span>
+<span class="nc" id="L146">                inventoryTable.add(actor)</span>
+<span class="nc" id="L147">                        .size(INVENTORY_ITEM_SIZE, INVENTORY_ITEM_SIZE)</span>
+<span class="nc" id="L148">                        .pad(INVENTORY_PADDING);</span>
+<span class="nc" id="L149">            } else {</span>
+<span class="nc" id="L150">                inventoryTable.add().size(INVENTORY_ITEM_SIZE, INVENTORY_ITEM_SIZE).pad(INVENTORY_PADDING);</span>
+            }
+
+            // Add a new row after every 2 items (0-based index, so i+1 % 2 == 0 means we've
+            // added 2 items)
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            if ((i + 1) % INVENTORY_COLS == 0) {</span>
+<span class="nc" id="L156">                inventoryTable.row();</span>
+            }
+        }
+
+        // If we have an odd number of items, add an empty cell to complete the last row
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (inventory.size() % INVENTORY_COLS != 0) {</span>
+<span class="nc" id="L162">            inventoryTable.add().size(INVENTORY_ITEM_SIZE, INVENTORY_ITEM_SIZE).pad(INVENTORY_PADDING);</span>
+        }
+<span class="nc" id="L164">    }</span>
+
+    private com.badlogic.gdx.scenes.scene2d.Actor createBodyPartActor(BodyPart part) {
+<span class="nc" id="L167">        return new com.badlogic.gdx.scenes.scene2d.Actor() {</span>
+<span class="nc" id="L168">            private final Texture texture = part.getTexture();</span>
+
+            @Override
+            public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
+<span class="nc" id="L172">                float labelHeight = getHeight() * 0.15f;</span>
+
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                if (texture != null) {</span>
+                    // Draw the body part texture, leaving smaller space at the bottom for the label
+<span class="nc" id="L176">                    float availableHeight = getHeight() - labelHeight;</span>
+<span class="nc" id="L177">                    float size = Math.min(getWidth(), availableHeight) * 0.9f;</span>
+<span class="nc" id="L178">                    float x = getX() + (getWidth() - size) / 2f;</span>
+<span class="nc" id="L179">                    float y = getY() + labelHeight + (availableHeight - size) / 2f;</span>
+<span class="nc" id="L180">                    batch.draw(texture, x, y, size, size);</span>
+                }
+
+<span class="nc bnc" id="L183" title="All 4 branches missed.">                if (font != null &amp;&amp; part.getName() != null) {</span>
+                    // Draw the body part name centered under the image with smaller text
+<span class="nc" id="L185">                    float originalScaleX = font.getData().scaleX;</span>
+<span class="nc" id="L186">                    float originalScaleY = font.getData().scaleY;</span>
+<span class="nc" id="L187">                    font.getData().setScale(originalScaleX * 0.6f, originalScaleY * 0.6f);</span>
+
+<span class="nc" id="L189">                    float textY = getY() + labelHeight - 3f;</span>
+<span class="nc" id="L190">                    font.draw(batch, part.getName(),</span>
+<span class="nc" id="L191">                            getX(), textY,</span>
+<span class="nc" id="L192">                            getWidth(), Align.center, true);</span>
+
+<span class="nc" id="L194">                    font.getData().setScale(originalScaleX, originalScaleY);</span>
+                }
+<span class="nc" id="L196">            }</span>
+        };
+    }
+
+    private void createBodySlots() {
+<span class="nc" id="L201">        mobDropZone = new com.badlogic.gdx.scenes.scene2d.Actor() {</span>
+            @Override
+            public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
+<span class="nc" id="L204">            }</span>
+        };
+
+<span class="nc" id="L207">        stage.addActor(mobDropZone);</span>
+
+<span class="nc" id="L209">        setupDropTargets();</span>
+<span class="nc" id="L210">    }</span>
+
+    private void addDragSource(final com.badlogic.gdx.scenes.scene2d.Actor actor, final BodyPart part) {
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (dragAndDrop == null) {</span>
+<span class="nc" id="L214">            return;</span>
+        }
+
+<span class="nc" id="L217">        dragAndDrop.addSource(new DragAndDrop.Source(actor) {</span>
+            @Override
+            public DragAndDrop.Payload dragStart(InputEvent event, float x, float y, int pointer) {
+<span class="nc" id="L220">                DragAndDrop.Payload payload = new DragAndDrop.Payload();</span>
+<span class="nc" id="L221">                payload.setObject(part);</span>
+
+<span class="nc" id="L223">                Image dragImage = new Image(part.getTexture());</span>
+<span class="nc" id="L224">                dragImage.setSize(INVENTORY_ITEM_SIZE, INVENTORY_ITEM_SIZE);</span>
+<span class="nc" id="L225">                payload.setDragActor(dragImage);</span>
+
+<span class="nc" id="L227">                return payload;</span>
+            }
+        });
+<span class="nc" id="L230">    }</span>
+
+    private void addHoverTooltip(final com.badlogic.gdx.scenes.scene2d.Actor actor, final BodyPart part) {
+<span class="nc" id="L233">        actor.addListener(new InputListener() {</span>
+            @Override
+            public void enter(InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                if (tooltipLabel != null) {</span>
+<span class="nc" id="L237">                    String text = part.getName() + &quot;\n&quot; +</span>
+<span class="nc" id="L238">                            &quot;Health: &quot; + part.getHealth() + &quot;\n&quot; +</span>
+<span class="nc" id="L239">                            &quot;Damage: &quot; + part.getDamage() + &quot;\n&quot; +</span>
+<span class="nc" id="L240">                            &quot;Speed: &quot; + part.getSpeed() + &quot;\n&quot; +</span>
+<span class="nc" id="L241">                            &quot;Class: &quot; + part.getPlayerClass();</span>
+<span class="nc" id="L242">                    tooltipLabel.setText(text);</span>
+<span class="nc" id="L243">                    tooltipLabel.setVisible(true);</span>
+<span class="nc" id="L244">                    tooltipLabel.toFront();</span>
+                }
+<span class="nc" id="L246">            }</span>
+
+            @Override
+            public void exit(InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor toActor) {
+<span class="nc bnc" id="L250" title="All 2 branches missed.">                if (tooltipLabel != null) {</span>
+<span class="nc" id="L251">                    tooltipLabel.setVisible(false);</span>
+                }
+<span class="nc" id="L253">            }</span>
+
+            @Override
+            public boolean mouseMoved(InputEvent event, float x, float y) {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                if (tooltipLabel != null) {</span>
+<span class="nc" id="L258">                    Vector2 v = new Vector2(x, y);</span>
+<span class="nc" id="L259">                    actor.localToStageCoordinates(v);</span>
+<span class="nc" id="L260">                    tooltipLabel.setPosition(v.x + 12f, v.y + 12f);</span>
+                }
+<span class="nc" id="L262">                return false;</span>
+            }
+        });
+<span class="nc" id="L265">    }</span>
+
+    private void setupDropTargets() {
+<span class="nc bnc" id="L268" title="All 4 branches missed.">        if (dragAndDrop == null || selectedMob == null) {</span>
+<span class="nc" id="L269">            return;</span>
+        }
+
+<span class="nc" id="L272">        dragAndDrop.addTarget(new DragAndDrop.Target(mobDropZone) {</span>
+            @Override
+            public boolean drag(DragAndDrop.Source source, DragAndDrop.Payload payload, float x, float y,
+                    int pointer) {
+<span class="nc" id="L276">                Object object = payload.getObject();</span>
+<span class="nc" id="L277">                return object instanceof BodyPart;</span>
+            }
+
+            @Override
+            public void drop(DragAndDrop.Source source, DragAndDrop.Payload payload, float x, float y,
+                    int pointer) {
+<span class="nc" id="L283">                Object object = payload.getObject();</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">                if (!(object instanceof BodyPart)) {</span>
+<span class="nc" id="L285">                    return;</span>
+                }
+<span class="nc" id="L287">                BodyPart newPart = (BodyPart) object;</span>
+<span class="nc" id="L288">                List&lt;BodyPart&gt; inventory = game.getGameState().getInventory();</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">                if (!inventory.contains(newPart)) {</span>
+<span class="nc" id="L290">                    return;</span>
+                }
+
+<span class="nc" id="L293">                BodyPartType type = newPart.getType();</span>
+<span class="nc" id="L294">                BodyPart oldPart = null;</span>
+
+<span class="nc bnc" id="L296" title="All 7 branches missed.">                switch (type) {</span>
+                    case HEAD:
+<span class="nc" id="L298">                        oldPart = selectedMob.getHead();</span>
+<span class="nc" id="L299">                        selectedMob.setHead(newPart);</span>
+<span class="nc" id="L300">                        break;</span>
+                    case BODY:
+<span class="nc" id="L302">                        oldPart = selectedMob.getBody();</span>
+<span class="nc" id="L303">                        selectedMob.setBody(newPart);</span>
+<span class="nc" id="L304">                        break;</span>
+                    case LEFT_ARM:
+<span class="nc" id="L306">                        oldPart = selectedMob.getLeftArm();</span>
+<span class="nc" id="L307">                        selectedMob.setLeftArm(newPart);</span>
+<span class="nc" id="L308">                        break;</span>
+                    case RIGHT_ARM:
+<span class="nc" id="L310">                        oldPart = selectedMob.getRightArm();</span>
+<span class="nc" id="L311">                        selectedMob.setRightArm(newPart);</span>
+<span class="nc" id="L312">                        break;</span>
+                    case LEFT_LEG:
+<span class="nc" id="L314">                        oldPart = selectedMob.leftLeg;</span>
+<span class="nc" id="L315">                        selectedMob.setLeftLeg(newPart);</span>
+<span class="nc" id="L316">                        break;</span>
+                    case RIGHT_LEG:
+<span class="nc" id="L318">                        oldPart = selectedMob.rightLeg;</span>
+<span class="nc" id="L319">                        selectedMob.setRightLeg(newPart);</span>
+<span class="nc" id="L320">                        break;</span>
+                    default:
+                        break;
+                }
+
+<span class="nc" id="L325">                selectedMob.calculateAttributes();</span>
+<span class="nc" id="L326">                selectedMob.playerClass = selectedMob.determinePlayerClass();</span>
+<span class="nc" id="L327">                inventory.remove(newPart);</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">                if (oldPart != null) {</span>
+<span class="nc" id="L329">                    game.getGameState().addToInventory(oldPart);</span>
+                }
+<span class="nc" id="L331">                updateInventory();</span>
+<span class="nc" id="L332">            }</span>
+        });
+<span class="nc" id="L334">    }</span>
+
+    private void updateBodySlotPositions() {
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        if (selectedMob == null) {</span>
+<span class="nc" id="L338">            return;</span>
+        }
+
+<span class="nc" id="L341">        float mobX = 270f;</span>
+<span class="nc" id="L342">        float mobY = viewport.getWorldHeight() / 2f - 350f;</span>
+<span class="nc" id="L343">        float scale = 4.0f;</span>
+<span class="nc" id="L344">        float width = Mob.WIDTH * scale;</span>
+<span class="nc" id="L345">        float height = Mob.HEIGHT * scale;</span>
+
+<span class="nc bnc" id="L347" title="All 2 branches missed.">        if (mobDropZone != null) {</span>
+<span class="nc" id="L348">            mobDropZone.setBounds(mobX, mobY, width, height);</span>
+        }
+<span class="nc" id="L350">    }</span>
+
+    private void updateSelectedMob() {
+<span class="nc" id="L353">        GameState gameState = game.getGameState();</span>
+<span class="nc bnc" id="L354" title="All 4 branches missed.">        switch (selectedMobIndex) {</span>
+            case 0:
+<span class="nc" id="L356">                selectedMob = gameState.getMob1();</span>
+<span class="nc" id="L357">                break;</span>
+            case 1:
+<span class="nc" id="L359">                selectedMob = gameState.getMob2();</span>
+<span class="nc" id="L360">                break;</span>
+            case 2:
+<span class="nc" id="L362">                selectedMob = gameState.getMob3();</span>
+                break;
+        }
+<span class="nc" id="L365">    }</span>
+
+    @Override
+    public void render(float delta) {
+<span class="nc" id="L369">        updateBodySlotPositions();</span>
+        // Update stage
+<span class="nc" id="L371">        stage.act(delta);</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {</span>
+<span class="nc" id="L373">            pause();</span>
+<span class="nc" id="L374">            game.setScreen(new OptionsScreen(game, this));</span>
+        }
+<span class="nc" id="L376">        handleInput();</span>
+
+        // Clear screen
+<span class="nc" id="L379">        Gdx.gl.glClearColor(0, 0, 0, 1);</span>
+<span class="nc" id="L380">        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);</span>
+
+<span class="nc" id="L382">        viewport.apply();</span>
+<span class="nc" id="L383">        batch.setProjectionMatrix(camera.combined);</span>
+
+<span class="nc" id="L385">        batch.begin();</span>
+
+<span class="nc" id="L387">        batch.draw(</span>
+                background,
+                0,
+                0,
+<span class="nc" id="L391">                viewport.getWorldWidth(),</span>
+<span class="nc" id="L392">                viewport.getWorldHeight());</span>
+
+<span class="nc bnc" id="L394" title="All 2 branches missed.">        if (selectedMob != null) {</span>
+            // Draw mob in the center
+<span class="nc" id="L396">            float mobX = 270f;</span>
+<span class="nc" id="L397">            float mobY = viewport.getWorldHeight() / 2f - 350f;</span>
+
+            // Save original position
+<span class="nc" id="L400">            float originalX = selectedMob.lanePosition;</span>
+<span class="nc" id="L401">            float originalY = selectedMob.laneHight;</span>
+
+            // Set new position for rendering
+<span class="nc" id="L404">            selectedMob.lanePosition = mobX;</span>
+<span class="nc" id="L405">            selectedMob.laneHight = mobY;</span>
+
+            // Render the mob with increased size
+<span class="nc" id="L408">            float scale = 4.0f;</span>
+<span class="nc" id="L409">            float width = Mob.WIDTH * scale;</span>
+<span class="nc" id="L410">            float height = Mob.HEIGHT * scale;</span>
+<span class="nc" id="L411">            selectedMob.render(batch, width, height);</span>
+
+            // Restore original position
+<span class="nc" id="L414">            selectedMob.lanePosition = originalX;</span>
+<span class="nc" id="L415">            selectedMob.laneHight = originalY;</span>
+
+<span class="nc" id="L417">            String statsText = &quot;Health: &quot; + selectedMob.getHealth()</span>
+<span class="nc" id="L418">                    + &quot;\nDamage: &quot; + (int) selectedMob.getTotalDamage()</span>
+<span class="nc" id="L419">                    + &quot;\nSpeed: &quot; + selectedMob.getTotalSpeed();</span>
+<span class="nc" id="L420">            BodyPart[] parts = new BodyPart[] { selectedMob.getHead(), selectedMob.getBody(), selectedMob.getLeftArm(),</span>
+<span class="nc" id="L421">                    selectedMob.getRightArm(), selectedMob.leftLeg, selectedMob.rightLeg };</span>
+<span class="nc" id="L422">            Map&lt;PlayerClass, Integer&gt; counts = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">            for (BodyPart p : parts) {</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">                if (p != null) {</span>
+<span class="nc" id="L425">                    PlayerClass c = p.getPlayerClass();</span>
+<span class="nc" id="L426">                    counts.put(c, counts.getOrDefault(c, 0) + 1);</span>
+                }
+            }
+<span class="nc" id="L429">            int totalParts = 0;</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">            for (Integer v : counts.values()) totalParts += v;</span>
+<span class="nc" id="L431">            StringBuilder comp = new StringBuilder();</span>
+<span class="nc" id="L432">            comp.append(&quot;Class: &quot;).append(selectedMob.getPlayerClass()).append(&quot;\n&quot;);</span>
+<span class="nc" id="L433">            comp.append(&quot;Type %:\n&quot;);</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">            for (Map.Entry&lt;PlayerClass, Integer&gt; e : counts.entrySet()) {</span>
+<span class="nc" id="L435">                int pct = Math.round(e.getValue() * 100f / Math.max(1, totalParts));</span>
+<span class="nc" id="L436">                comp.append(e.getKey().name()).append(&quot;: &quot;).append(pct).append(&quot;%\n&quot;);</span>
+<span class="nc" id="L437">            }</span>
+<span class="nc" id="L438">            statsText = statsText + &quot;\n&quot; + comp.toString();</span>
+<span class="nc" id="L439">            float margin = 60f;</span>
+<span class="nc" id="L440">            float textX = viewport.getWorldWidth() - margin - 250f;</span>
+<span class="nc" id="L441">            float textY = viewport.getWorldHeight() - margin - 30f;</span>
+<span class="nc" id="L442">            font.draw(batch, statsText, textX, textY);</span>
+        }
+
+<span class="nc" id="L445">        batch.end();</span>
+
+        // Draw UI
+<span class="nc" id="L448">        stage.getViewport().apply();</span>
+<span class="nc" id="L449">        stage.draw();</span>
+<span class="nc" id="L450">    }</span>
+
+    private void handleInput() {
+        // Handle left/right to switch between mobs
+<span class="nc bnc" id="L454" title="All 2 branches missed.">        if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {</span>
+<span class="nc" id="L455">            int newMobIndex = (selectedMobIndex - 1 + 3) % 3;</span>
+<span class="nc" id="L456">            game.setScreen(new CharacterEditorScreen(game, newMobIndex));</span>
+<span class="nc" id="L457">            dispose();</span>
+<span class="nc bnc" id="L458" title="All 2 branches missed.">        } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {</span>
+<span class="nc" id="L459">            int newMobIndex = (selectedMobIndex + 1) % 3;</span>
+<span class="nc" id="L460">            game.setScreen(new CharacterEditorScreen(game, newMobIndex));</span>
+<span class="nc" id="L461">            dispose();</span>
+        }
+
+        // Handle back to menu
+<span class="nc bnc" id="L465" title="All 2 branches missed.">        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {</span>
+<span class="nc" id="L466">            game</span>
+<span class="nc" id="L467">                    .getGameState()</span>
+<span class="nc" id="L468">                    .setCurrentScreen(GameState.GameScreen.LEVEL_SELECTOR);</span>
+<span class="nc" id="L469">            game.setScreen(new LevelSelectScreen(game));</span>
+<span class="nc" id="L470">            dispose();</span>
+        }
+<span class="nc" id="L472">    }</span>
+
+    @Override
+    public void resize(int width, int height) {
+<span class="nc" id="L476">        viewport.update(width, height, true);</span>
+<span class="nc" id="L477">        camera.position.set(</span>
+<span class="nc" id="L478">                viewport.getWorldWidth() / 2f,</span>
+<span class="nc" id="L479">                viewport.getWorldHeight() / 2f,</span>
+                0f);
+<span class="nc" id="L481">        camera.update();</span>
+
+        // Update stage viewport
+<span class="nc" id="L484">        stage.getViewport().update(width, height, true);</span>
+<span class="nc" id="L485">    }</span>
+
+    @Override
+    public void show() {
+<span class="nc" id="L489">        Gdx.input.setInputProcessor(stage);</span>
+<span class="nc" id="L490">    }</span>
+
+    @Override
+    public void hide() {
+<span class="nc" id="L494">    }</span>
+
+    @Override
+    public void pause() {
+<span class="nc" id="L498">    }</span>
+
+    @Override
+    public void resume() {
+<span class="nc" id="L502">    }</span>
+
+    @Override
+    public void dispose() {
+<span class="nc bnc" id="L506" title="All 2 branches missed.">        if (background != null)</span>
+<span class="nc" id="L507">            background.dispose();</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        if (font != null)</span>
+<span class="nc" id="L509">            font.dispose();</span>
+<span class="nc bnc" id="L510" title="All 2 branches missed.">        if (stage != null)</span>
+<span class="nc" id="L511">            stage.dispose();</span>
+<span class="nc" id="L512">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
